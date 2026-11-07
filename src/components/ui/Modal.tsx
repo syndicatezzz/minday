@@ -133,7 +133,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
                   <X size={18} />
                 </button>
               </header>
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-6 sm:px-7">{children}</div>
+              <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-6 pb-6 sm:px-7">{children}</div>
               {footer && (
                 <footer className="flex flex-col-reverse gap-2 border-t border-line px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-end sm:px-7">
                   {footer}
