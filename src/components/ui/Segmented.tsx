@@ -43,7 +43,7 @@ export function Segmented<T extends string>({
             className={cn(
               'relative flex items-center justify-center gap-1.5 rounded-xl font-medium transition-colors duration-200',
               size === 'sm' ? 'h-8 px-3 text-xs' : 'h-9 px-3.5 text-[13px]',
-              stretch && 'flex-1',
+              stretch && 'h-auto min-h-9 min-w-0 flex-1 px-2 py-1.5 sm:px-3.5',
               active ? 'text-fg' : 'text-subtle hover:text-muted',
             )}
           >
@@ -54,7 +54,7 @@ export function Segmented<T extends string>({
                 transition={springSnappy}
               />
             )}
-            <span className="relative z-10 flex items-center gap-1.5 whitespace-nowrap">
+            <span className={cn('relative z-10 flex items-center gap-1.5', stretch ? 'text-center leading-tight' : 'whitespace-nowrap')}>
               {o.icon}
               {o.label}
             </span>

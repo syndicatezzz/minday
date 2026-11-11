@@ -15,7 +15,6 @@ import { deviceTimeZone, formatTime, zonedParts } from '@/lib/date';
 import { fadeUp, stagger } from '@/lib/motion';
 import { exportBackup } from '@/lib/backup';
 import { hapticsSupported, sounds } from '@/lib/feedback';
-import { setThemeOrigin } from '@/lib/theme-origin';
 import { actions, useApp } from '@/lib/store/app-store';
 import { useToday } from '@/lib/store/clock';
 import { toast } from '@/lib/store/toast-store';
@@ -164,7 +163,6 @@ export default function SettingsPage() {
           </Section>
 
           <Section title="Внешний вид">
-            <div onPointerDown={(e) => setThemeOrigin(e.clientX, e.clientY)}>
             <Segmented<ThemePreference>
               ariaLabel="Тема"
               stretch
@@ -176,7 +174,6 @@ export default function SettingsPage() {
                 { value: 'system', label: 'Системная', icon: <Monitor size={14} /> },
               ]}
             />
-            </div>
           </Section>
 
           <Section title="Время и календарь" description={`Сейчас ${nowStr} · ${timeZone}`}>

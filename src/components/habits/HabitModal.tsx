@@ -320,9 +320,9 @@ export function HabitModal() {
             value={form.kind}
             onChange={(v) => set('kind', v)}
             options={[
-              { value: 'daily', label: 'Каждый день' },
+              { value: 'daily', label: 'Ежедневно' },
               { value: 'weekdays', label: 'Дни недели' },
-              { value: 'weekly', label: 'N раз в неделю' },
+              { value: 'weekly', label: 'N в неделю' },
             ]}
           />
           {form.kind === 'weekdays' && (

@@ -124,7 +124,7 @@ export function WeeklyReview() {
           >
             <ChevronRight size={15} />
           </button>
-          {isCurrent && <span className="text-xs text-subtle">· неделя ещё идёт</span>}
+          {isCurrent && <span className="hidden text-xs text-subtle sm:inline">· неделя ещё идёт</span>}
         </span>
       }
       footer={

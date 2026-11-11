@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import { prefersReducedMotion } from '@/lib/navigation';
 import { THEME_KEY } from '@/lib/storage/adapter';
-import { takeThemeOrigin } from '@/lib/theme-origin';
 import { useApp } from '@/lib/store/app-store';
 
 function toggleClasses(dark: boolean) {
@@ -15,23 +14,19 @@ function toggleClasses(dark: boolean) {
 
 type DocWithVT = Document & { startViewTransition?: (cb: () => void) => unknown };
 
+/**
+ * Смена темы — мягкое перетекание старой темы в новую.
+ * View Transitions делает снимки страницы и плавно меняет их прозрачность
+ * на GPU, поэтому стеклянные слои не перерисовываются в каждом кадре.
+ * Без поддержки API тема меняется мгновенно (без тяжёлых CSS-переходов).
+ */
 function apply(dark: boolean, animate: boolean) {
   const root = document.documentElement;
   if (root.classList.contains('dark') === dark && root.classList.contains('light') === !dark) return;
   const doc = document as DocWithVT;
-  const origin = takeThemeOrigin();
-  if (animate && origin && doc.startViewTransition && !prefersReducedMotion()) {
-    // Круговое раскрытие новой темы из точки нажатия
-    const r = Math.hypot(Math.max(origin.x, innerWidth - origin.x), Math.max(origin.y, innerHeight - origin.y));
-    root.style.setProperty('--vt-x', `${origin.x}px`);
-    root.style.setProperty('--vt-y', `${origin.y}px`);
-    root.style.setProperty('--vt-r', `${r}px`);
+  if (animate && doc.startViewTransition && !prefersReducedMotion()) {
     doc.startViewTransition(() => toggleClasses(dark));
     return;
-  }
-  if (animate) {
-    root.classList.add('theme-anim');
-    window.setTimeout(() => root.classList.remove('theme-anim'), 450);
   }
   toggleClasses(dark);
 }

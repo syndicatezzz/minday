@@ -82,10 +82,10 @@ export function MonthCalendar({ month, direction, onMonthChange, selected, onSel
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: direction > 0 ? -8 : 8 }}
             transition={{ duration: 0.2 }}
-            className="text-xl font-semibold tracking-[-0.02em] text-fg sm:text-2xl"
+            className="text-lg font-semibold tracking-[-0.02em] whitespace-nowrap text-fg sm:text-2xl"
             aria-live="polite"
           >
-            {formatMonthYear(month)}
+            {formatMonthYear(month).replace(' г.', '')}
           </motion.h2>
         </AnimatePresence>
         <div className="flex items-center gap-1">
@@ -108,7 +108,7 @@ export function MonthCalendar({ month, direction, onMonthChange, selected, onSel
         </div>
       </div>
 
-      <div className="mb-2 grid grid-cols-7 gap-1.5 text-center" aria-hidden>
+      <div className="mb-2 grid grid-cols-7 gap-1 text-center sm:gap-1.5" aria-hidden>
         {orderedWeekdays(weekStartsOn).map((d) => (
           <span key={d} className="text-[11px] font-medium tracking-wide text-subtle uppercase">
             {WEEKDAY_SHORT[d]}
@@ -116,7 +116,7 @@ export function MonthCalendar({ month, direction, onMonthChange, selected, onSel
         ))}
       </div>
 
-      <div className="relative overflow-hidden">
+      <div className="relative -m-1 overflow-hidden p-1">
         <AnimatePresence mode="popLayout" initial={false} custom={direction}>
           <motion.div
             key={month}
@@ -126,9 +126,9 @@ export function MonthCalendar({ month, direction, onMonthChange, selected, onSel
             exit={{ opacity: 0, x: direction * -48 }}
             transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             role="grid"
-            aria-label={`Календарь: ${formatMonthYear(month)}`}
+            aria-label={`Календарь: ${formatMonthYear(month).replace(' г.', '')}`}
             onKeyDown={onKeyDown}
-            className="grid grid-cols-7 gap-1.5"
+            className="grid grid-cols-7 gap-1 sm:gap-1.5"
           >
             {days.map((d) => {
               const s = summaries[d];
@@ -148,7 +148,7 @@ export function MonthCalendar({ month, direction, onMonthChange, selected, onSel
                   aria-label={`${formatLongDate(d)}. ${meta.label}${s && s.scheduled ? `, ${s.completed} из ${s.scheduled}` : ''}`}
                   onClick={() => onSelect(d)}
                   className={cn(
-                    'group relative flex aspect-square min-h-[44px] flex-col items-center justify-center rounded-2xl text-sm sm:aspect-[1.15]',
+                    'group relative flex h-11 min-w-0 flex-col items-center justify-center rounded-xl text-sm sm:h-auto sm:aspect-[1.15] sm:rounded-2xl',
                     'transition-[background-color,opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-95',
                     meta.bg,
                     inMonth ? '' : 'opacity-35',
@@ -158,7 +158,7 @@ export function MonthCalendar({ month, direction, onMonthChange, selected, onSel
                   {isSelected && (
                     <motion.span
                       layoutId="calendar-selected"
-                      className="absolute inset-0 rounded-2xl ring-2 ring-fg/70 shadow-[0_8px_24px_-10px_var(--ring)]"
+                      className="absolute inset-0 rounded-xl ring-2 ring-fg/70 shadow-[0_8px_24px_-10px_var(--ring)] sm:rounded-2xl"
                       transition={springSnappy}
                       aria-hidden
                     />
