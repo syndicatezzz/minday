@@ -81,7 +81,7 @@ export function Toaster() {
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-[70] flex justify-center px-4 lg:inset-x-auto lg:right-6 lg:bottom-6 lg:px-0"
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-[70] flex justify-center px-4 lg:inset-x-auto lg:right-6 lg:bottom-24 lg:px-0"
     >
       <ul className="flex w-full max-w-sm flex-col gap-2">
         <AnimatePresence initial={false}>

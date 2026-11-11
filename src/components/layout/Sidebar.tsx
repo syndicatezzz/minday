@@ -1,7 +1,8 @@
 'use client';
 
-import { FlaskConical, Plus } from 'lucide-react';
-import Link from 'next/link';
+import { FlaskConical, Plus, Search } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { AppLink } from '@/components/layout/AppLink';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { cn } from '@/lib/cn';
@@ -14,12 +15,14 @@ import { NavList } from './NavList';
 export function SidebarContent({ layoutKey, onNavigate }: { layoutKey: string; onNavigate?: () => void }) {
   const name = useApp((s) => s.data.settings.userName);
   const mode = useApp((s) => s.mode);
+  const [shortcut, setShortcut] = useState('Ctrl K');
+  useEffect(() => setShortcut(/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K'), []);
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between px-2 pt-1 pb-7">
-        <Link href="/" onClick={onNavigate} aria-label="На главную" className="rounded-xl">
+        <AppLink href="/" onClick={onNavigate} aria-label="На главную" className="rounded-xl">
           <Logo />
-        </Link>
+        </AppLink>
         {mode === 'demo' && (
           <span className="inline-flex items-center gap-1 rounded-lg bg-warning/12 px-2 py-1 text-[10px] font-semibold tracking-wide text-warning uppercase">
             <FlaskConical size={11} /> Демо
@@ -34,10 +37,18 @@ export function SidebarContent({ layoutKey, onNavigate }: { layoutKey: string; o
         <Button variant="primary" className="w-full" onClick={() => ui.openHabitModal()}>
           <Plus size={17} /> Новая привычка
         </Button>
+        <button
+          type="button"
+          onClick={() => ui.setCommand(true)}
+          className="mt-2 flex h-10 w-full items-center gap-2.5 rounded-2xl px-3.5 text-[13px] whitespace-nowrap text-subtle transition-colors hover:bg-fill hover:text-fg"
+        >
+          <Search size={15} className="shrink-0" /> Поиск и команды
+          <kbd className="ml-auto shrink-0 rounded-md border border-line px-1.5 py-0.5 font-sans text-[10.5px] whitespace-nowrap">{shortcut}</kbd>
+        </button>
       </div>
 
       <div className="mt-auto space-y-3 pt-6">
-        <Link
+        <AppLink
           href="/settings"
           onClick={onNavigate}
           className="flex items-center gap-3 rounded-2xl p-2 transition-colors hover:bg-fill"
@@ -47,7 +58,7 @@ export function SidebarContent({ layoutKey, onNavigate }: { layoutKey: string; o
             <span className="block truncate text-sm font-medium text-fg">{name || 'Гость'}</span>
             <span className="block text-xs text-subtle">Профиль и настройки</span>
           </span>
-        </Link>
+        </AppLink>
         <ThemeToggle />
       </div>
     </div>

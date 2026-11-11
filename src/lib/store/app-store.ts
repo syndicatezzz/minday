@@ -8,6 +8,7 @@ import type {
   Reminder,
   Settings,
   Weekday,
+  WeeklyReview,
 } from '@/types';
 import { createStore, useStore } from './create-store';
 import { storage, THEME_KEY } from '@/lib/storage/adapter';
@@ -16,6 +17,7 @@ import { EPOCH, entryKey, isCompleted, sameSchedule, scheduleAt } from '@/lib/ha
 import { addDays } from '@/lib/date';
 import { createId } from '@/lib/id';
 import { buildDemoData } from '@/lib/demo';
+import { guessHabitLook } from '@/lib/habits/guess';
 import { computeToday } from '@/lib/today';
 
 export interface AppState {
@@ -487,6 +489,42 @@ export const actions = {
 
   restoreReminder(r: Reminder) {
     update((d) => (d.habits[r.habitId] ? { ...d, reminders: { ...d.reminders, [r.id]: r } } : d));
+  },
+
+  /** Новый порядок привычек после drag-and-drop. */
+  reorderHabits(orderedIds: string[]) {
+    update((d) => {
+      const habits = { ...d.habits };
+      orderedIds.forEach((id, i) => {
+        if (habits[id] && habits[id].order !== i) habits[id] = { ...habits[id], order: i };
+      });
+      return { ...d, habits };
+    });
+  },
+
+  /** Быстрое добавление: ежедневная привычка без времени, с иконкой по ключевым словам. */
+  quickAddHabit(name: string): string | null {
+    const clean = name.trim().slice(0, 60);
+    if (!clean) return null;
+    return actions.createHabit({
+      name: clean,
+      description: '',
+      ...guessHabitLook(clean),
+      schedule: { type: 'daily' },
+      time: null,
+      targetPerDay: 1,
+      startDate: today(),
+      reminderEnabled: false,
+      reminderTime: null,
+    });
+  },
+
+  markCelebrated(date: DateKey) {
+    update((d) => ({ ...d, meta: { ...d.meta, celebratedOn: date } }));
+  },
+
+  saveReview(review: Omit<WeeklyReview, 'updatedAt'>) {
+    update((d) => ({ ...d, reviews: { ...d.reviews, [review.weekStart]: { ...review, updatedAt: nowIso() } } }));
   },
 
   /* ---------- настройки и данные ---------- */

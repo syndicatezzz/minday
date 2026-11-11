@@ -1,9 +1,10 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Archive, ArchiveRestore, Bell, Clock, Ellipsis, Flame, Pause, Pencil, Play, Plus, Search, Sprout, Trash2, X } from 'lucide-react';
+import { Archive, ArchiveRestore, Bell, Check, Clock, GripVertical, Ellipsis, Flame, Pause, Pencil, Play, Plus, Search, Sprout, Trash2, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { habitIcon } from '@/components/habits/habit-icons';
+import { ReorderList } from '@/components/habits/ReorderList';
 import { useDeleteHabit } from '@/components/habits/useHabitActions';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -51,6 +52,7 @@ export default function HabitsPage() {
   const [category, setCategory] = useState<HabitCategory | 'all'>('all');
   const [sort, setSort] = useState<SortKey>('order');
   const [tab, setTab] = useState<Tab>('active');
+  const [reorder, setReorder] = useState(false);
 
   const rows: Row[] = useMemo(
     () =>
@@ -93,6 +95,10 @@ export default function HabitsPage() {
     return list.sort(cmp[sort]);
   }, [rows, tab, category, query, sort]);
 
+  const activeOrdered = useMemo(
+    () => rows.filter((r) => !r.habit.archivedOn).map((r) => r.habit).sort((a, b) => a.order - b.order),
+    [rows],
+  );
   const usedCategories = useMemo(() => new Set(rows.map((r) => r.habit.category)), [rows]);
   const filtersActive = query.trim() !== '' || category !== 'all';
 
@@ -158,7 +164,23 @@ export default function HabitsPage() {
                     { value: 'archived', label: `Архив · ${counts.archived}` },
                   ]}
                 />
-                <div className="w-44 shrink-0">
+                {tab === 'active' && counts.active > 1 && (
+                  <Button
+                    variant={reorder ? 'primary' : 'subtle'}
+                    className="h-11 shrink-0"
+                    aria-pressed={reorder}
+                    onClick={() => {
+                      setReorder((r) => !r);
+                      setSort('order');
+                      setQuery('');
+                      setCategory('all');
+                    }}
+                  >
+                    {reorder ? <Check size={16} /> : <GripVertical size={16} />}
+                    <span className="hidden sm:inline">{reorder ? 'Готово' : 'Порядок'}</span>
+                  </Button>
+                )}
+                <div className={cn('w-44 shrink-0', reorder && 'pointer-events-none opacity-40')}>
                   <label htmlFor="habit-sort" className="sr-only">
                     Сортировка
                   </label>
@@ -188,7 +210,12 @@ export default function HabitsPage() {
             Нажмите на карточку, чтобы изменить привычку. Пауза сохраняет серию: дни паузы не считаются пропусками.
           </Hint>
 
-          {visible.length === 0 ? (
+          {reorder && tab === 'active' ? (
+            <>
+              <p className="mb-3 px-1 text-[13px] text-subtle">Перетащите привычки за ручку или используйте стрелки — порядок сохранится сразу.</p>
+              <ReorderList habits={activeOrdered} />
+            </>
+          ) : visible.length === 0 ? (
             <EmptyState
               icon={tab === 'archived' ? <Archive size={26} /> : <Search size={26} />}
               title={tab === 'archived' && !filtersActive ? 'Архив пуст' : 'Ничего не найдено'}
@@ -259,7 +286,7 @@ function HabitRow({ row, today, timeFormat }: { row: Row; today: string; timeFor
         }}
         aria-label={`Изменить привычку «${habit.name}»`}
         className={cn(
-          'glass group block h-full rounded-[24px] p-4 text-left transition-transform duration-300 hover:-translate-y-0.5 sm:p-5',
+          'glass glass-hover spotlight lift group block h-full rounded-[24px] p-4 text-left sm:p-5',
           (habit.archivedOn || paused) && 'opacity-80',
         )}
       >

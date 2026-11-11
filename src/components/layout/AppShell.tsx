@@ -2,9 +2,12 @@
 
 import { CircleAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { CommandPalette } from '@/components/command/CommandPalette';
 import { HabitModal } from '@/components/habits/HabitModal';
 import { Onboarding } from '@/components/onboarding/Onboarding';
 import { ReminderModal } from '@/components/reminders/ReminderModal';
+import { WeeklyReview } from '@/components/review/WeeklyReview';
+import { TimerChip, TimerModal, TimerRunner } from '@/components/timer/TimerModal';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -13,6 +16,7 @@ import { Toaster } from '@/components/ui/Toaster';
 import { actions, useApp } from '@/lib/store/app-store';
 import { ui } from '@/lib/store/ui-store';
 import { DemoBanner } from './DemoBanner';
+import { Fab } from './Fab';
 import { BottomNavigation, MobileDrawer, MobileTopBar } from './MobileNav';
 import { PageTransition } from './PageTransition';
 import { Sidebar } from './Sidebar';
@@ -85,8 +89,14 @@ export function AppShell({ children }: { children: ReactNode }) {
       </main>
 
       <BottomNavigation />
+      <Fab />
       <HabitModal />
       <ReminderModal />
+      <WeeklyReview />
+      <TimerModal />
+      <TimerChip />
+      <TimerRunner />
+      <CommandPalette />
       <ConfirmDialog />
       <Onboarding />
       <Toaster />

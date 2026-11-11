@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, Globe, Plus } from 'lucide-react';
-import Link from 'next/link';
+import { AppLink } from '@/components/layout/AppLink';
 import { useMemo } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { NotificationPermissionCard } from '@/components/reminders/NotificationPermissionCard';
@@ -102,9 +102,9 @@ export default function RemindersPage() {
               {timeZone}
               {settings.timeZone === 'auto' ? ' · автоматически' : ''}
             </p>
-            <Link href="/settings" className="mt-2 inline-block text-xs font-medium text-accent hover:underline">
+            <AppLink href="/settings" className="mt-2 inline-block text-xs font-medium text-accent hover:underline">
               Изменить в настройках
-            </Link>
+            </AppLink>
           </div>
         </motion.div>
       </motion.div>

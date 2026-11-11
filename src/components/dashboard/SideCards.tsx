@@ -2,7 +2,8 @@
 
 import { motion } from 'framer-motion';
 import { Flame, Quote, Trophy } from 'lucide-react';
-import Link from 'next/link';
+import { AppLink } from '@/components/layout/AppLink';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import { MiniRing } from '@/components/ui/Progress';
 import { cn } from '@/lib/cn';
 import { WEEKDAY_SHORT, formatShortDate, parseKey, plural, weekdayOf } from '@/lib/date';
@@ -12,13 +13,13 @@ import type { DateKey } from '@/types';
 
 export function StreakCard({ current, best }: { current: number; best: number }) {
   return (
-    <motion.section variants={fadeUp} aria-label="Серии" className="glass relative overflow-hidden rounded-[28px] p-5 sm:p-6">
+    <motion.section variants={fadeUp} aria-label="Серии" className="glass glass-hover spotlight relative overflow-hidden rounded-[28px] p-5 sm:p-6">
       <div aria-hidden className="pointer-events-none absolute -top-16 -right-10 h-40 w-40 rounded-full bg-warning/15 blur-3xl" />
       <div className="relative flex items-start justify-between">
         <div>
           <p className="text-[12px] font-medium tracking-wide text-subtle uppercase">Текущая серия</p>
           <p className="mt-2 flex items-baseline gap-2">
-            <span className="text-[44px] leading-none font-semibold tracking-[-0.05em] text-fg tabular-nums">{current}</span>
+            <AnimatedNumber value={current} className="text-[44px] leading-none font-semibold tracking-[-0.05em] text-fg tabular-nums" />
             <span className="text-sm text-muted">{plural(current, ['день', 'дня', 'дней'])}</span>
           </p>
         </div>
@@ -44,7 +45,7 @@ export function StreakCard({ current, best }: { current: number; best: number })
 
 export function QuoteCard({ text, author }: { text: string; author?: string }) {
   return (
-    <motion.figure variants={fadeUp} className="glass rounded-[28px] p-5 sm:p-6">
+    <motion.figure variants={fadeUp} className="glass glass-hover spotlight rounded-[28px] p-5 sm:p-6">
       <Quote size={18} className="text-accent/70" aria-hidden />
       <blockquote className="mt-3 text-[15px] leading-relaxed text-fg text-balance">{text}</blockquote>
       {author && <figcaption className="mt-2 text-xs text-subtle">— {author}</figcaption>}
@@ -63,12 +64,12 @@ const STATE_COLOR: Record<string, string> = {
 
 export function WeekStrip({ days, today }: { days: DaySummary[]; today: DateKey }) {
   return (
-    <motion.section variants={fadeUp} aria-label="Эта неделя" className="glass rounded-[28px] p-5 sm:p-6">
+    <motion.section variants={fadeUp} aria-label="Эта неделя" className="glass glass-hover spotlight rounded-[28px] p-5 sm:p-6">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-fg">Эта неделя</h2>
-        <Link href="/calendar" className="text-xs font-medium text-accent hover:underline">
+        <AppLink href="/calendar" className="text-xs font-medium text-accent hover:underline">
           Календарь
-        </Link>
+        </AppLink>
       </div>
       <ol className="grid grid-cols-7 gap-1">
         {days.map((d) => {
@@ -76,7 +77,7 @@ export function WeekStrip({ days, today }: { days: DaySummary[]; today: DateKey 
           const rate = d.state === 'future' || d.scheduled === 0 ? null : d.completed / d.scheduled;
           return (
             <li key={d.date}>
-              <Link
+              <AppLink
                 href={`/calendar?date=${d.date}`}
                 aria-label={`${formatShortDate(d.date)}: ${d.scheduled ? `${d.completed} из ${d.scheduled}` : 'нет привычек'}`}
                 className={cn(
@@ -93,7 +94,7 @@ export function WeekStrip({ days, today }: { days: DaySummary[]; today: DateKey 
                     {parseKey(d.date).d}
                   </span>
                 </span>
-              </Link>
+              </AppLink>
             </li>
           );
         })}
@@ -110,7 +111,7 @@ export function SevenDayStats({ days }: { days: DaySummary[] }) {
   const perfect = days.filter((d) => d.state === 'full').length;
   const max = Math.max(1, ...days.map((d) => d.scheduled));
   return (
-    <motion.section variants={fadeUp} aria-label="Последние 7 дней" className="glass rounded-[28px] p-5 sm:p-6">
+    <motion.section variants={fadeUp} aria-label="Последние 7 дней" className="glass glass-hover spotlight rounded-[28px] p-5 sm:p-6">
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-fg">Последние 7 дней</h2>

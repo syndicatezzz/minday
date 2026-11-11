@@ -2,9 +2,12 @@
 
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
 import { CalendarCheck, Plus, Sprout } from 'lucide-react';
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SevenDayStats, QuoteCard, StreakCard, WeekStrip } from '@/components/dashboard/SideCards';
+import { Celebration } from '@/components/dashboard/Celebration';
 import { TodayProgress } from '@/components/dashboard/TodayProgress';
+import { WeeklyReviewCard } from '@/components/dashboard/WeeklyReviewCard';
+import { QuickAdd } from '@/components/habits/QuickAdd';
 import { HabitCard } from '@/components/habits/HabitCard';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -15,9 +18,10 @@ import { type DayItem, getDayItems, summarizeDay, summarizeRange } from '@/lib/h
 import { habitStreak, overallStreak } from '@/lib/habits/streak';
 import { stagger } from '@/lib/motion';
 import { quoteOfDay } from '@/lib/quotes';
-import { useApp } from '@/lib/store/app-store';
+import { feedback } from '@/lib/feedback';
+import { useCoarsePointer } from '@/lib/hooks';
+import { actions, useApp } from '@/lib/store/app-store';
 import { useToday } from '@/lib/store/clock';
-import { toast } from '@/lib/store/toast-store';
 import { ui } from '@/lib/store/ui-store';
 
 function sortByTime(a: DayItem, b: DayItem) {
@@ -67,15 +71,22 @@ export default function DashboardPage() {
     ].filter((g) => g.items.length);
   }, [items, nowMinutes]);
 
-  // Поздравление, когда день закрыт полностью
+  // Анимация достижения, когда закрыт весь день (один раз за день)
+  const celebratedOn = useApp((s) => s.data.meta.celebratedOn);
+  const [celebrate, setCelebrate] = useState(false);
   const prevCompleted = useRef<number | null>(null);
   useEffect(() => {
     const prev = prevCompleted.current;
     prevCompleted.current = summary.completed;
-    if (prev !== null && prev < summary.completed && summary.completed === summary.scheduled && summary.scheduled > 0) {
-      toast({ title: 'Все привычки на сегодня выполнены', description: 'Красивый день. Так держать!' });
+    const allDone = summary.scheduled > 0 && summary.completed === summary.scheduled;
+    if (prev !== null && prev < summary.completed && allDone && celebratedOn !== today) {
+      actions.markCelebrated(today);
+      feedback.allDone();
+      window.setTimeout(() => setCelebrate(true), 450);
     }
-  }, [summary.completed, summary.scheduled]);
+  }, [summary.completed, summary.scheduled, celebratedOn, today]);
+  const closeCelebration = useCallback(() => setCelebrate(false), []);
+  const coarse = useCoarsePointer();
 
   const quote = quoteOfDay(today);
   const activeCount = habits.filter((h) => !h.archivedOn).length;
@@ -99,6 +110,7 @@ export default function DashboardPage() {
       />
 
       {activeCount === 0 ? (
+        <div className="space-y-4">
         <EmptyState
           icon={<Sprout size={28} />}
           title="Пока нет ни одной привычки"
@@ -109,6 +121,8 @@ export default function DashboardPage() {
             </Button>
           }
         />
+        <QuickAdd className="mx-auto max-w-2xl" />
+        </div>
       ) : (
         <motion.div variants={stagger} initial="hidden" animate="show" className="grid gap-4 lg:grid-cols-12 lg:gap-5">
           <div className="space-y-4 lg:col-span-8 lg:space-y-5">
@@ -123,10 +137,17 @@ export default function DashboardPage() {
                   {summary.completed}/{summary.scheduled}
                 </span>
               </div>
-              <Hint id="dashboard-check" className="mb-3">
-                Нажмите на круг справа, чтобы отметить выполнение. Повторное нажатие отменит отметку, а в меню «⋯» можно
-                пропустить привычку или изменить её.
-              </Hint>
+              <QuickAdd className="mb-3" />
+              {coarse ? (
+                <Hint id="dashboard-swipe" className="mb-3">
+                  Смахните карточку вправо, чтобы отметить выполнение, или влево — чтобы пропустить. Касание круга тоже работает.
+                </Hint>
+              ) : (
+                <Hint id="dashboard-check" className="mb-3">
+                  Нажмите на круг справа, чтобы отметить выполнение. Повторное нажатие отменит отметку, а в меню «⋯» можно
+                  пропустить привычку, запустить таймер или изменить её. Нажмите Ctrl/⌘ + K для быстрых команд.
+                </Hint>
+              )}
 
               {items.length === 0 ? (
                 <EmptyState
@@ -170,11 +191,13 @@ export default function DashboardPage() {
           <div className="space-y-4 lg:col-span-4 lg:space-y-5">
             <StreakCard current={streak.current} best={streak.best} />
             <WeekStrip days={week} today={today} />
+            <WeeklyReviewCard days={week} />
             <SevenDayStats days={last7} />
             <QuoteCard text={quote.text} author={quote.author} />
           </div>
         </motion.div>
       )}
+      <Celebration open={celebrate} onClose={closeCelebration} count={summary.scheduled} streak={streak.current} />
     </>
   );
 }

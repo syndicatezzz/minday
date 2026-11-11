@@ -8,6 +8,8 @@ import { cn } from '@/lib/cn';
 import { formatInstantTime, formatLongDate, formatTime, formatWeekday, timeToMinutes } from '@/lib/date';
 import { colorOf } from '@/lib/habits/meta';
 import type { DayItem, DaySummary } from '@/lib/habits/schedule';
+import { feedback } from '@/lib/feedback';
+import { EASE_OUT } from '@/lib/motion';
 import { actions } from '@/lib/store/app-store';
 import { toast } from '@/lib/store/toast-store';
 import type { DateKey, DayStatus } from '@/types';
@@ -90,13 +92,22 @@ export function DayDetails({
           </p>
         ) : (
           <ul className="space-y-2">
-            {sorted.map((it) => {
+            {sorted.map((it, idx) => {
               const Icon = habitIcon(it.habit.icon);
               const color = colorOf(it.habit.color);
               const st = STATUS[it.status];
               const canToggle = !isFuture;
               return (
-                <li key={it.habit.id} className="flex items-center gap-3 rounded-2xl bg-fill p-2.5 pr-2">
+                <motion.li
+                  key={it.habit.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 + idx * 0.04, duration: 0.35, ease: EASE_OUT }}
+                  className={cn(
+                    'flex items-center gap-3 rounded-2xl p-2.5 pr-2 transition-colors duration-500',
+                    it.status === 'completed' ? 'bg-success/[0.08]' : 'bg-fill',
+                  )}
+                >
                   <span
                     className="grid h-9 w-9 shrink-0 place-items-center rounded-xl"
                     style={{ background: `color-mix(in oklab, ${color} 16%, transparent)`, color }}
@@ -151,6 +162,8 @@ export function DayDetails({
                         aria-label={it.status === 'completed' ? `Снять отметку: ${it.habit.name}` : `Отметить выполненной: ${it.habit.name}`}
                         onClick={() => {
                           const r = actions.toggleHabit(it.habit.id, date);
+                          if (r === 'completed') feedback.complete();
+                          else if (r === 'cleared') feedback.undo();
                           if (date !== today && r) {
                             toast({
                               tone: 'info',
@@ -169,7 +182,7 @@ export function DayDetails({
                       </button>
                     </div>
                   )}
-                </li>
+                </motion.li>
               );
             })}
           </ul>

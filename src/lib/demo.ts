@@ -130,7 +130,7 @@ export function buildDemoData(today: DateKey, baseSettings: Settings): AppData {
   const rand = mulberry32(20241107);
   const data = createEmptyData();
   data.settings = { ...baseSettings };
-  data.meta = { onboarded: true, dismissedHints: [], createdAt: new Date().toISOString() };
+  data.meta = { onboarded: true, dismissedHints: [], createdAt: new Date().toISOString(), celebratedOn: null };
   const now = new Date().toISOString();
 
   DEMO.forEach((d, i) => {

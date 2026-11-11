@@ -38,6 +38,11 @@
   --orb-3: rgba(240, 186, 214, 0.22);
   --grain-opacity: 0.025;
   --ring: rgba(106, 90, 240, 0.55);
+  --glass-sheen: rgba(255, 255, 255, 0.55);
+  --glass-border-hover: rgba(255, 255, 255, 1);
+  --glow: 0 0 0 1px rgba(106, 90, 240, 0.1), 0 22px 50px -24px rgba(106, 90, 240, 0.45);
+  --spot: rgba(106, 90, 240, 0.07);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .dark {
@@ -72,6 +77,10 @@
   --orb-3: rgba(190, 120, 200, 0.08);
   --grain-opacity: 0.04;
   --ring: rgba(169, 156, 255, 0.6);
+  --glass-sheen: rgba(255, 255, 255, 0.07);
+  --glass-border-hover: rgba(255, 255, 255, 0.17);
+  --glow: 0 0 0 1px rgba(169, 156, 255, 0.08), 0 24px 60px -28px rgba(140, 120, 255, 0.55);
+  --spot: rgba(169, 156, 255, 0.075);
 }
 
 @theme inline {
@@ -177,7 +186,9 @@
 
 @utility glass {
   position: relative;
-  background: linear-gradient(180deg, var(--glass-top), var(--glass-bottom));
+  background:
+    radial-gradient(120% 70% at 0% 0%, var(--glass-sheen), transparent 55%),
+    linear-gradient(180deg, var(--glass-top), var(--glass-bottom));
   border: 1px solid var(--glass-border);
   box-shadow:
     var(--shadow),
@@ -185,6 +196,36 @@
     inset 0 0 0 1px var(--glass-edge);
   backdrop-filter: blur(28px) saturate(150%);
   -webkit-backdrop-filter: blur(28px) saturate(150%);
+}
+
+/* Реакция карточки на наведение: ярче граница и мягкое свечение */
+@utility glass-hover {
+  transition:
+    border-color 0.35s var(--ease-out),
+    box-shadow 0.35s var(--ease-out),
+    transform 0.35s var(--ease-out);
+  @media (hover: hover) {
+    &:hover {
+      border-color: var(--glass-border-hover);
+      box-shadow:
+        var(--shadow),
+        var(--glow),
+        inset 0 1px 0 0 var(--glass-highlight),
+        inset 0 0 0 1px var(--glass-edge);
+    }
+  }
+}
+
+/* Подъём для карточек без собственной motion-анимации */
+@utility lift {
+  @media (hover: hover) {
+    &:hover {
+      transform: translateY(-2px);
+    }
+  }
+  &:active {
+    transform: scale(0.985);
+  }
 }
 
 @utility glass-solid {
@@ -210,6 +251,24 @@
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* Световое пятно, следующее за курсором (координаты задаёт SpotlightTracker) */
+.spotlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), var(--spot), transparent 70%);
+  transition: opacity 0.4s var(--ease-out);
+}
+
+@media (hover: hover) {
+  .spotlight:hover::after {
+    opacity: 1;
   }
 }
 
@@ -255,6 +314,7 @@
   top: 38%;
   left: -10vmax;
   background: radial-gradient(circle at center, var(--orb-3), transparent 65%);
+  animation: drift-c 40s ease-in-out infinite alternate;
 }
 
 .app-grain {
@@ -272,9 +332,34 @@
   }
 }
 
+@keyframes drift-c {
+  to {
+    transform: translate3d(14vw, -10vh, 0) scale(1.15);
+  }
+}
+
 @keyframes drift-b {
   to {
     transform: translate3d(-6vw, -8vh, 0) scale(1.12);
+  }
+}
+
+/* Производительность: на телефонах размытие слабее, без поддержки — плотная поверхность */
+@media (max-width: 640px) {
+  .glass {
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+  }
+  .app-backdrop::before,
+  .app-backdrop::after,
+  .app-backdrop > span {
+    filter: blur(60px);
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: var(--glass-solid);
   }
 }
 
@@ -319,6 +404,26 @@
 }
 
 /* Плавная смена темы */
+/* Смена темы: круговое раскрытие через View Transitions API */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+  animation: theme-reveal 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
+  to {
+    clip-path: circle(var(--vt-r, 150vmax) at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
+}
+
 html.theme-anim,
 html.theme-anim *,
 html.theme-anim *::before,

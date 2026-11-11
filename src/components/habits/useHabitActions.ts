@@ -1,10 +1,11 @@
 'use client';
 
 import { useCallback } from 'react';
-import { actions } from '@/lib/store/app-store';
+import { feedback } from '@/lib/feedback';
+import { actions, appStore } from '@/lib/store/app-store';
 import { toast } from '@/lib/store/toast-store';
 import { ui } from '@/lib/store/ui-store';
-import type { Habit } from '@/types';
+import type { DateKey, Habit } from '@/types';
 
 /** Безопасное удаление: подтверждение, альтернатива «в архив» и отмена через toast. */
 export function useDeleteHabit() {
@@ -33,4 +34,19 @@ export function useDeleteHabit() {
     }
     return true;
   }, []);
+}
+
+/**
+ * Основное действие отметки: для привычек с несколькими повторениями —
+ * +1, иначе переключение «выполнено / не выполнено». Со звуком и вибрацией.
+ */
+export function checkHabit(habitId: string, date: DateKey): 'completed' | 'progress' | 'cleared' | null {
+  const habit = appStore.get().data.habits[habitId];
+  if (!habit) return null;
+  const done = appStore.get().data.entries[`${habitId}:${date}`]?.status === 'completed';
+  const result = habit.targetPerDay > 1 && !done ? actions.stepHabit(habitId, date, 1) : actions.toggleHabit(habitId, date);
+  if (result === 'completed') feedback.complete();
+  else if (result === 'progress') feedback.tap();
+  else if (result === 'cleared') feedback.undo();
+  return result;
 }

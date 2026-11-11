@@ -1,7 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { CalendarDays } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { CalendarDays, LayoutGrid } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { DayDetails } from '@/components/calendar/DayDetails';
 import { Heatmap } from '@/components/calendar/Heatmap';
@@ -12,16 +12,18 @@ import { CardHeader, GlassCard } from '@/components/ui/GlassCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Select } from '@/components/ui/Field';
 import { Hint } from '@/components/ui/Hint';
+import { Segmented } from '@/components/ui/Segmented';
 import { addDays, isDateKey, rangeKeys, startOfMonth, startOfWeek } from '@/lib/date';
 import { CATEGORY_LABEL, HABIT_CATEGORIES } from '@/lib/habits/meta';
 import { type DaySummary, getDayItems, summarizeDay } from '@/lib/habits/schedule';
-import { stagger } from '@/lib/motion';
+import { slide, stagger } from '@/lib/motion';
 import { useApp } from '@/lib/store/app-store';
 import { useToday } from '@/lib/store/clock';
 import { ui } from '@/lib/store/ui-store';
 import type { DateKey, Habit } from '@/types';
 
 const HEATMAP_WEEKS = 26;
+type View = 'month' | 'year';
 
 export default function CalendarPage() {
   const habitsMap = useApp((s) => s.data.habits);
@@ -34,6 +36,8 @@ export default function CalendarPage() {
   const [month, setMonth] = useState<DateKey>(startOfMonth(today));
   const [direction, setDirection] = useState(0);
   const [filter, setFilter] = useState('all');
+  const [view, setView] = useState<View>('month');
+  const [viewDir, setViewDir] = useState(1);
 
   // Поддержка ссылок вида /calendar?date=YYYY-MM-DD
   useEffect(() => {
@@ -139,19 +143,53 @@ export default function CalendarPage() {
 
       <motion.div variants={stagger} initial="hidden" animate="show" className="grid gap-4 lg:grid-cols-12 lg:gap-5">
         <GlassCard className="p-4 sm:p-6 lg:col-span-7 xl:col-span-8">
-          <MonthCalendar
-            month={month}
-            direction={direction}
-            onMonthChange={changeMonth}
-            selected={selected}
-            onSelect={setSelected}
-            today={today}
-            weekStartsOn={ws}
-            summaries={summaries}
-          />
-          <div className="mt-5 border-t border-line pt-4">
-            <CalendarLegend />
+          <div className="mb-4 flex justify-end">
+            <Segmented<View>
+              ariaLabel="Вид календаря"
+              size="sm"
+              value={view}
+              onChange={(v) => {
+                setViewDir(v === 'year' ? 1 : -1);
+                setView(v);
+              }}
+              options={[
+                { value: 'month', label: 'Месяц', icon: <CalendarDays size={13} /> },
+                { value: 'year', label: 'Активность', icon: <LayoutGrid size={13} /> },
+              ]}
+            />
           </div>
+          <AnimatePresence mode="wait" initial={false}>
+            {view === 'month' ? (
+              <motion.div key="month" {...slide(viewDir * -1, 30)}>
+                <MonthCalendar
+                  month={month}
+                  direction={direction}
+                  onMonthChange={changeMonth}
+                  selected={selected}
+                  onSelect={setSelected}
+                  today={today}
+                  weekStartsOn={ws}
+                  summaries={summaries}
+                />
+                <div className="mt-5 border-t border-line pt-4">
+                  <CalendarLegend />
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div key="year" {...slide(viewDir, 30)}>
+                <CardHeader
+                  title="Карта активности"
+                  subtitle={`Последние ${HEATMAP_WEEKS} недель · ${filter === 'all' ? 'все привычки' : 'с учётом фильтра'}`}
+                  className="mb-5"
+                />
+                <Heatmap summaries={summaries} weeks={HEATMAP_WEEKS} today={today} weekStartsOn={ws} selected={selected} onSelect={selectFromHeatmap} />
+                <Hint id="calendar-heatmap" className="mt-4">
+                  Каждая клетка — день. Красный — всё пропущено, оттенки фиолетового — часть выполнена, зелёный — идеальный день.
+                  Нажмите на клетку, чтобы открыть подробности.
+                </Hint>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </GlassCard>
 
         <GlassCard id="day-details" className="p-5 sm:p-6 lg:col-span-5 xl:col-span-4">
@@ -165,25 +203,6 @@ export default function CalendarPage() {
           />
         </GlassCard>
 
-        <GlassCard className="p-5 sm:p-6 lg:col-span-12">
-          <CardHeader
-            title="Карта активности"
-            subtitle={`Последние ${HEATMAP_WEEKS} недель · ${filter === 'all' ? 'все привычки' : 'с учётом фильтра'}`}
-            className="mb-5"
-          />
-          <Heatmap
-            summaries={summaries}
-            weeks={HEATMAP_WEEKS}
-            today={today}
-            weekStartsOn={ws}
-            selected={selected}
-            onSelect={selectFromHeatmap}
-          />
-          <Hint id="calendar-heatmap" className="mt-4">
-            Каждая клетка — день. Красный — всё пропущено, оттенки фиолетового — часть выполнена, зелёный — идеальный день.
-            Нажмите на клетку, чтобы открыть подробности.
-          </Hint>
-        </GlassCard>
       </motion.div>
     </>
   );

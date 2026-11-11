@@ -104,6 +104,12 @@ export interface Settings {
   skipCompletedReminders: boolean;
   /** Дублировать напоминания всплывающим сообщением внутри приложения. */
   inAppReminders: boolean;
+  /** Тихий звук при выполнении привычки. По умолчанию выключен. */
+  soundEnabled: boolean;
+  /** Вибрация на поддерживаемых устройствах. */
+  hapticsEnabled: boolean;
+  /** Звуковой сигнал по окончании таймера. */
+  timerSound: boolean;
 }
 
 export type DataMode = 'real' | 'demo';
@@ -112,6 +118,17 @@ export interface AppMeta {
   onboarded: boolean;
   dismissedHints: string[];
   createdAt: string;
+  /** Логическая дата, за которую уже показана анимация «все привычки выполнены». */
+  celebratedOn: DateKey | null;
+}
+
+/** Итоги недели, которые пользователь заполняет в Weekly Review. */
+export interface WeeklyReview {
+  weekStart: DateKey;
+  rating: number;
+  wins: string;
+  improve: string;
+  updatedAt: string;
 }
 
 export interface AppData {
@@ -119,6 +136,7 @@ export interface AppData {
   habits: Record<string, Habit>;
   entries: Record<string, HabitEntry>;
   reminders: Record<string, Reminder>;
+  reviews: Record<DateKey, WeeklyReview>;
   settings: Settings;
   meta: AppMeta;
 }

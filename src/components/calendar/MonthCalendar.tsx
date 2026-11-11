@@ -19,6 +19,7 @@ import {
 } from '@/lib/date';
 import type { DayState, DaySummary } from '@/lib/habits/schedule';
 import type { DateKey } from '@/types';
+import { springSnappy } from '@/lib/motion';
 
 export const DAY_STATE_META: Record<DayState, { label: string; bg: string; fg: string; dot: string }> = {
   full: { label: 'Всё выполнено', bg: 'bg-success/16', fg: 'text-fg', dot: 'bg-success' },
@@ -147,16 +148,24 @@ export function MonthCalendar({ month, direction, onMonthChange, selected, onSel
                   aria-label={`${formatLongDate(d)}. ${meta.label}${s && s.scheduled ? `, ${s.completed} из ${s.scheduled}` : ''}`}
                   onClick={() => onSelect(d)}
                   className={cn(
-                    'group relative flex aspect-square min-h-[44px] flex-col items-center justify-center rounded-2xl text-sm transition-all duration-200 sm:aspect-[1.15]',
+                    'group relative flex aspect-square min-h-[44px] flex-col items-center justify-center rounded-2xl text-sm sm:aspect-[1.15]',
+                    'transition-[background-color,opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-95',
                     meta.bg,
                     inMonth ? '' : 'opacity-35',
-                    isSelected ? 'ring-2 ring-fg/70' : 'hover:ring-1 hover:ring-line',
-                    'active:scale-95',
+                    !isSelected && 'hover:ring-1 hover:ring-line',
                   )}
                 >
+                  {isSelected && (
+                    <motion.span
+                      layoutId="calendar-selected"
+                      className="absolute inset-0 rounded-2xl ring-2 ring-fg/70 shadow-[0_8px_24px_-10px_var(--ring)]"
+                      transition={springSnappy}
+                      aria-hidden
+                    />
+                  )}
                   <span
                     className={cn(
-                      'grid h-7 w-7 place-items-center rounded-full font-medium tabular-nums',
+                      'relative grid h-7 w-7 place-items-center rounded-full font-medium tabular-nums transition-colors duration-500',
                       isToday ? 'bg-accent text-accent-fg' : meta.fg,
                     )}
                   >

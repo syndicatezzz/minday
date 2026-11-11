@@ -9,6 +9,7 @@ import type {
   ScheduleVersion,
   Settings,
   Weekday,
+  WeeklyReview,
 } from '@/types';
 import { isDateKey, isTimeString } from '@/lib/date';
 import { EPOCH, entryKey } from '@/lib/habits/schedule';
@@ -28,6 +29,9 @@ export function defaultSettings(): Settings {
     notificationsEnabled: false,
     skipCompletedReminders: true,
     inAppReminders: true,
+    soundEnabled: false,
+    hapticsEnabled: true,
+    timerSound: true,
   };
 }
 
@@ -37,8 +41,9 @@ export function createEmptyData(): AppData {
     habits: {},
     entries: {},
     reminders: {},
+    reviews: {},
     settings: defaultSettings(),
-    meta: { onboarded: false, dismissedHints: [], createdAt: new Date().toISOString() },
+    meta: { onboarded: false, dismissedHints: [], createdAt: new Date().toISOString(), celebratedOn: null },
   };
 }
 
@@ -159,6 +164,9 @@ function normalizeSettings(v: unknown): Settings {
     notificationsEnabled: v.notificationsEnabled === true,
     skipCompletedReminders: v.skipCompletedReminders !== false,
     inAppReminders: v.inAppReminders !== false,
+    soundEnabled: v.soundEnabled === true,
+    hapticsEnabled: v.hapticsEnabled !== false,
+    timerSound: v.timerSound !== false,
   };
 }
 
@@ -198,17 +206,34 @@ export function parseAppData(input: unknown): AppData {
     }
   }
 
+  const reviews: Record<string, WeeklyReview> = {};
+  if (isObj(raw.reviews)) {
+    for (const r of Object.values(raw.reviews)) {
+      if (!isObj(r) || !isDateKey(r.weekStart)) continue;
+      const rating = Number(r.rating);
+      reviews[r.weekStart] = {
+        weekStart: r.weekStart,
+        rating: Number.isFinite(rating) ? Math.min(5, Math.max(0, Math.round(rating))) : 0,
+        wins: str(r.wins).slice(0, 1000),
+        improve: str(r.improve).slice(0, 1000),
+        updatedAt: str(r.updatedAt, new Date().toISOString()),
+      };
+    }
+  }
+
   const meta = isObj(raw.meta) ? raw.meta : {};
   return {
     version: SCHEMA_VERSION,
     habits,
     entries,
     reminders,
+    reviews,
     settings: normalizeSettings(raw.settings),
     meta: {
       onboarded: meta.onboarded === true || Object.keys(habits).length > 0,
       dismissedHints: Array.isArray(meta.dismissedHints) ? meta.dismissedHints.filter((x): x is string => typeof x === 'string') : [],
       createdAt: str(meta.createdAt, new Date().toISOString()),
+      celebratedOn: isDateKey(meta.celebratedOn) ? meta.celebratedOn : null,
     },
   };
 }

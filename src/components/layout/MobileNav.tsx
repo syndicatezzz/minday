@@ -1,8 +1,8 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu as MenuIcon, Plus, X } from 'lucide-react';
-import Link from 'next/link';
+import { Menu as MenuIcon, Search, X } from 'lucide-react';
+import { AppLink } from '@/components/layout/AppLink';
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { cn } from '@/lib/cn';
@@ -11,6 +11,7 @@ import { NAV_ITEMS, isActivePath } from '@/lib/nav';
 import { useStore } from '@/lib/store/create-store';
 import { ui, uiStore } from '@/lib/store/ui-store';
 import { Portal } from '@/components/ui/Portal';
+import { MobileFab } from './Fab';
 import { Logo } from './Logo';
 import { SidebarContent } from './Sidebar';
 
@@ -19,9 +20,18 @@ export function MobileTopBar() {
   return (
     <header className="sticky top-0 z-30 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2 sm:px-6 lg:hidden">
       <div className="glass flex h-14 items-center justify-between rounded-[20px] pr-2 pl-3">
-        <Link href="/" aria-label="На главную">
+        <AppLink href="/" aria-label="На главную">
           <Logo />
-        </Link>
+        </AppLink>
+        <div className="flex items-center">
+        <button
+          type="button"
+          onClick={() => ui.setCommand(true)}
+          aria-label="Команды и поиск"
+          className="grid h-11 w-11 place-items-center rounded-2xl text-muted transition-colors hover:bg-fill hover:text-fg"
+        >
+          <Search size={19} />
+        </button>
         <button
           type="button"
           onClick={() => ui.setDrawer(true)}
@@ -31,6 +41,7 @@ export function MobileTopBar() {
         >
           <MenuIcon size={20} />
         </button>
+        </div>
       </div>
     </header>
   );
@@ -108,7 +119,7 @@ export function BottomNavigation() {
     const Icon = item.icon;
     return (
       <li key={item.href} className="flex-1">
-        <Link
+        <AppLink
           href={item.href}
           aria-current={active ? 'page' : undefined}
           className={cn(
@@ -125,7 +136,7 @@ export function BottomNavigation() {
           )}
           <Icon size={20} className={cn('relative z-10', active && 'text-accent')} />
           <span className="relative z-10">{item.label}</span>
-        </Link>
+        </AppLink>
       </li>
     );
   };
@@ -138,14 +149,7 @@ export function BottomNavigation() {
       <ul className="glass-solid mx-auto flex max-w-md items-center gap-1 rounded-[26px] p-1.5">
         {left.map(renderItem)}
         <li className="flex flex-1 justify-center">
-          <button
-            type="button"
-            onClick={() => ui.openHabitModal()}
-            aria-label="Новая привычка"
-            className="grid h-12 w-12 place-items-center rounded-[18px] bg-fg text-bg shadow-[0_10px_24px_-8px_var(--ring)] transition-transform active:scale-90"
-          >
-            <Plus size={22} />
-          </button>
+          <MobileFab />
         </li>
         {right.map(renderItem)}
       </ul>

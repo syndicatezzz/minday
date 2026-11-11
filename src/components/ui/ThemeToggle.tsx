@@ -5,6 +5,7 @@ import { Monitor, Moon, Sun } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { springSnappy } from '@/lib/motion';
 import { actions, useApp } from '@/lib/store/app-store';
+import { setThemeOrigin } from '@/lib/theme-origin';
 import type { ThemePreference } from '@/types';
 
 const OPTIONS: { value: ThemePreference; label: string; Icon: typeof Sun }[] = [
@@ -27,7 +28,10 @@ export function ThemeToggle({ className }: { className?: string }) {
             aria-checked={active}
             aria-label={label}
             title={label}
-            onClick={() => actions.updateSettings({ theme: value })}
+            onClick={(e) => {
+              setThemeOrigin(e.clientX, e.clientY);
+              actions.updateSettings({ theme: value });
+            }}
             className={cn(
               'relative grid h-8 flex-1 place-items-center rounded-xl transition-colors duration-200',
               active ? 'text-fg' : 'text-subtle hover:text-muted',

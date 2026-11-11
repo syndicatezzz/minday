@@ -23,8 +23,8 @@ export function GlassCard({ children, className, animated = true, interactive, a
       aria-label={ariaLabel}
       variants={animated ? fadeUp : undefined}
       className={cn(
-        'glass rounded-[26px]',
-        interactive && 'transition-transform duration-300 ease-out hover:-translate-y-0.5',
+        'glass glass-hover spotlight rounded-[26px]',
+        interactive && 'lift',
         className,
       )}
     >

@@ -14,6 +14,11 @@ interface UIState {
   habitModal: { open: boolean; habitId: string | null };
   reminderModal: { open: boolean; reminderId: string | null; habitId: string | null };
   drawerOpen: boolean;
+  /** Текущая страница плавно уходит перед переходом на новую. */
+  leaving: boolean;
+  commandOpen: boolean;
+  reviewOpen: boolean;
+  timer: { open: boolean; habitId: string | null };
   confirm: (ConfirmRequest & { resolve: (v: boolean | string) => void }) | null;
 }
 
@@ -21,6 +26,10 @@ export const uiStore = createStore<UIState>({
   habitModal: { open: false, habitId: null },
   reminderModal: { open: false, reminderId: null, habitId: null },
   drawerOpen: false,
+  leaving: false,
+  commandOpen: false,
+  reviewOpen: false,
+  timer: { open: false, habitId: null },
   confirm: null,
 });
 
@@ -39,6 +48,18 @@ export const ui = {
   },
   setDrawer(open: boolean) {
     uiStore.set({ drawerOpen: open });
+  },
+  setCommand(open: boolean) {
+    uiStore.set({ commandOpen: open, drawerOpen: false });
+  },
+  setReview(open: boolean) {
+    uiStore.set({ reviewOpen: open, commandOpen: false });
+  },
+  openTimer(habitId: string | null = null) {
+    uiStore.set({ timer: { open: true, habitId }, commandOpen: false });
+  },
+  closeTimer() {
+    uiStore.set((s) => ({ ...s, timer: { ...s.timer, open: false } }));
   },
   /** Промис-диалог подтверждения: true — подтверждено, строка — выбрано доп. действие. */
   confirm(req: ConfirmRequest): Promise<boolean | string> {

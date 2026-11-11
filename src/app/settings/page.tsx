@@ -13,8 +13,10 @@ import { Switch } from '@/components/ui/Switch';
 import { APP_CONFIG } from '@/config/app';
 import { deviceTimeZone, formatTime, zonedParts } from '@/lib/date';
 import { fadeUp, stagger } from '@/lib/motion';
-import { buildBackup } from '@/lib/storage/schema';
-import { actions, appStore, useApp } from '@/lib/store/app-store';
+import { exportBackup } from '@/lib/backup';
+import { hapticsSupported, sounds } from '@/lib/feedback';
+import { setThemeOrigin } from '@/lib/theme-origin';
+import { actions, useApp } from '@/lib/store/app-store';
 import { useToday } from '@/lib/store/clock';
 import { toast } from '@/lib/store/toast-store';
 import { ui } from '@/lib/store/ui-store';
@@ -74,6 +76,8 @@ export default function SettingsPage() {
   const [name, setName] = useState(settings.userName);
   const fileRef = useRef<HTMLInputElement>(null);
   const zones = useMemo(timeZones, []);
+  const [hapticsOk, setHapticsOk] = useState(true);
+  useEffect(() => setHapticsOk(hapticsSupported()), []);
 
   useEffect(() => setName(settings.userName), [settings.userName]);
 
@@ -82,20 +86,6 @@ export default function SettingsPage() {
     if (v === settings.userName) return;
     actions.updateSettings({ userName: v });
     toast({ title: 'Имя сохранено' });
-  };
-
-  const exportData = () => {
-    const { data } = appStore.get();
-    const blob = new Blob([JSON.stringify(buildBackup(data), null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${APP_CONFIG.storagePrefix}-backup-${new Date().toISOString().slice(0, 10)}${mode === 'demo' ? '-demo' : ''}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast({ title: 'Резервная копия скачана', description: 'Файл JSON с привычками, историей и настройками' });
   };
 
   const importFile = async (file: File) => {
@@ -174,6 +164,7 @@ export default function SettingsPage() {
           </Section>
 
           <Section title="Внешний вид">
+            <div onPointerDown={(e) => setThemeOrigin(e.clientX, e.clientY)}>
             <Segmented<ThemePreference>
               ariaLabel="Тема"
               stretch
@@ -185,6 +176,7 @@ export default function SettingsPage() {
                 { value: 'system', label: 'Системная', icon: <Monitor size={14} /> },
               ]}
             />
+            </div>
           </Section>
 
           <Section title="Время и календарь" description={`Сейчас ${nowStr} · ${timeZone}`}>
@@ -278,12 +270,58 @@ export default function SettingsPage() {
             />
           </Section>
 
+          <Section title="Звук и отклик" description="Деликатная обратная связь при отметке привычек">
+            <Row
+              label="Звук выполнения"
+              hint="Очень тихий двойной сигнал при отметке"
+              control={
+                <div className="flex items-center gap-2">
+                  {settings.soundEnabled && (
+                    <Button size="sm" variant="ghost" onClick={() => sounds.complete()}>
+                      Прослушать
+                    </Button>
+                  )}
+                  <Switch checked={settings.soundEnabled} onChange={(v) => {
+                    actions.updateSettings({ soundEnabled: v });
+                    if (v) sounds.complete();
+                  }} label="Звук выполнения" />
+                </div>
+              }
+            />
+            <Row
+              label="Тактильная отдача"
+              hint={hapticsOk ? 'Лёгкая вибрация на телефоне' : 'Этот браузер не поддерживает вибрацию (например, Safari на iPhone)'}
+              control={
+                <Switch
+                  checked={settings.hapticsEnabled}
+                  disabled={!hapticsOk}
+                  onChange={(v) => actions.updateSettings({ hapticsEnabled: v })}
+                  label="Тактильная отдача"
+                />
+              }
+            />
+            <Row
+              label="Сигнал таймера"
+              hint="Мягкий колокольчик по окончании таймера"
+              control={
+                <div className="flex items-center gap-2">
+                  {settings.timerSound && (
+                    <Button size="sm" variant="ghost" onClick={() => sounds.timer()}>
+                      Прослушать
+                    </Button>
+                  )}
+                  <Switch checked={settings.timerSound} onChange={(v) => actions.updateSettings({ timerSound: v })} label="Сигнал таймера" />
+                </div>
+              }
+            />
+          </Section>
+
           <Section
             title="Данные"
             description={`Хранятся локально в браузере · ${counts.h} привычек, ${counts.e} отметок${mode === 'demo' ? ' (демо)' : ''}`}
           >
             <div className="grid gap-2 sm:grid-cols-2">
-              <Button variant="subtle" onClick={exportData}>
+              <Button variant="subtle" onClick={exportBackup}>
                 <Download size={16} /> Экспорт в JSON
               </Button>
               <Button variant="subtle" onClick={() => fileRef.current?.click()}>

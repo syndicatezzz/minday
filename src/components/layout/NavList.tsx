@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Link from 'next/link';
+import { AppLink } from '@/components/layout/AppLink';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/cn';
 import { springSnappy } from '@/lib/motion';
@@ -16,7 +16,7 @@ export function NavList({ layoutKey, onNavigate }: { layoutKey: string; onNaviga
           const active = isActivePath(pathname, href);
           return (
             <li key={href}>
-              <Link
+              <AppLink
                 href={href}
                 onClick={onNavigate}
                 aria-current={active ? 'page' : undefined}
@@ -38,7 +38,7 @@ export function NavList({ layoutKey, onNavigate }: { layoutKey: string; onNaviga
                   className={cn('relative z-10 transition-colors', active ? 'text-accent' : 'text-subtle group-hover:text-muted')}
                 />
                 <span className="relative z-10">{label}</span>
-              </Link>
+              </AppLink>
             </li>
           );
         })}
