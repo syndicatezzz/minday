@@ -1,10 +1,11 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Archive, ArchiveRestore, Bell, Check, Clock, GripVertical, Ellipsis, Flame, Pause, Pencil, Play, Plus, Search, Sprout, Trash2, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Archive, ArchiveRestore, Bell, Check, Clock, GripVertical, ListChecks, Route, Ellipsis, Flame, Pause, Pencil, Play, Plus, Search, Sprout, Trash2, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { habitIcon } from '@/components/habits/habit-icons';
 import { ReorderList } from '@/components/habits/ReorderList';
+import { RoutinesPanel } from '@/components/routines/RoutinesPanel';
 import { useDeleteHabit } from '@/components/habits/useHabitActions';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -21,6 +22,7 @@ import { habitRate } from '@/lib/habits/analytics';
 import { CATEGORY_LABEL, HABIT_CATEGORIES, colorOf } from '@/lib/habits/meta';
 import { currentSchedule, describeSchedule, isPausedNow } from '@/lib/habits/schedule';
 import { habitStreak } from '@/lib/habits/streak';
+import { describeTarget } from '@/lib/habits/values';
 import { stagger } from '@/lib/motion';
 import { actions, useApp } from '@/lib/store/app-store';
 import { useToday } from '@/lib/store/clock';
@@ -53,6 +55,10 @@ export default function HabitsPage() {
   const [sort, setSort] = useState<SortKey>('order');
   const [tab, setTab] = useState<Tab>('active');
   const [reorder, setReorder] = useState(false);
+  const [view, setView] = useState<'habits' | 'routines'>('habits');
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('tab') === 'routines') setView('routines');
+  }, []);
 
   const rows: Row[] = useMemo(
     () =>
@@ -106,7 +112,7 @@ export default function HabitsPage() {
     <>
       <PageHeader
         eyebrow="Мои привычки"
-        title="Всё, что вы выстраиваете"
+        title={view === 'routines' ? 'Рутины — привычки цепочкой' : 'Всё, что вы выстраиваете'}
         description="Управляйте расписанием, напоминаниями и архивом. История выполнений сохраняется при любых изменениях."
         actions={
           <Button variant="primary" onClick={() => ui.openHabitModal()}>
@@ -115,7 +121,21 @@ export default function HabitsPage() {
         }
       />
 
-      {rows.length === 0 ? (
+      <div className="mb-5">
+        <Segmented<'habits' | 'routines'>
+          ariaLabel="Раздел"
+          value={view}
+          onChange={setView}
+          options={[
+            { value: 'habits', label: 'Привычки', icon: <ListChecks size={14} /> },
+            { value: 'routines', label: 'Рутины', icon: <Route size={14} /> },
+          ]}
+        />
+      </div>
+
+      {view === 'routines' ? (
+        <RoutinesPanel />
+      ) : rows.length === 0 ? (
         <EmptyState
           icon={<Sprout size={28} />}
           title="Список пока пуст"
@@ -306,6 +326,7 @@ function HabitRow({ row, today, timeFormat }: { row: Row; today: string; timeFor
               <Badge tone={status.tone}>{status.text}</Badge>
               <Badge>{CATEGORY_LABEL[habit.category]}</Badge>
               <Badge>{describeSchedule(currentSchedule(habit, today))}</Badge>
+              {habit.kind !== 'check' && <Badge tone="accent">{describeTarget(habit)}</Badge>}
             </div>
           </div>
           <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>

@@ -33,15 +33,15 @@
     0 1px 1px hsl(var(--shadow-color) / 0.05), 0 6px 16px -6px hsl(var(--shadow-color) / 0.14),
     0 24px 48px -24px hsl(var(--shadow-color) / 0.16);
   --shadow-lg: 0 30px 80px -20px hsl(var(--shadow-color) / 0.35);
-  --orb-1: rgba(140, 124, 246, 0.32);
-  --orb-2: rgba(110, 190, 240, 0.3);
+  --orb-1: color-mix(in oklab, var(--accent) 32%, transparent);
+  --orb-2: color-mix(in oklab, var(--accent-2) 30%, transparent);
   --orb-3: rgba(240, 186, 214, 0.22);
   --grain-opacity: 0.025;
-  --ring: rgba(106, 90, 240, 0.55);
+  --ring: color-mix(in oklab, var(--accent) 55%, transparent);
   --glass-sheen: rgba(255, 255, 255, 0.55);
   --glass-border-hover: rgba(255, 255, 255, 1);
-  --glow: 0 0 0 1px rgba(106, 90, 240, 0.1), 0 22px 50px -24px rgba(106, 90, 240, 0.45);
-  --spot: rgba(106, 90, 240, 0.07);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--accent) 10%, transparent), 0 22px 50px -24px color-mix(in oklab, var(--accent) 45%, transparent);
+  --spot: color-mix(in oklab, var(--accent) 7%, transparent);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -72,15 +72,15 @@
     0 1px 1px hsl(var(--shadow-color) / 0.4), 0 10px 24px -10px hsl(var(--shadow-color) / 0.6),
     0 30px 60px -30px hsl(var(--shadow-color) / 0.7);
   --shadow-lg: 0 40px 100px -20px hsl(var(--shadow-color) / 0.85);
-  --orb-1: rgba(120, 100, 255, 0.2);
-  --orb-2: rgba(70, 150, 230, 0.13);
+  --orb-1: color-mix(in oklab, var(--accent) 20%, transparent);
+  --orb-2: color-mix(in oklab, var(--accent-2) 14%, transparent);
   --orb-3: rgba(190, 120, 200, 0.08);
   --grain-opacity: 0.04;
-  --ring: rgba(169, 156, 255, 0.6);
+  --ring: color-mix(in oklab, var(--accent) 60%, transparent);
   --glass-sheen: rgba(255, 255, 255, 0.07);
   --glass-border-hover: rgba(255, 255, 255, 0.17);
-  --glow: 0 0 0 1px rgba(169, 156, 255, 0.08), 0 24px 60px -28px rgba(140, 120, 255, 0.55);
-  --spot: rgba(169, 156, 255, 0.075);
+  --glow: 0 0 0 1px color-mix(in oklab, var(--accent) 8%, transparent), 0 24px 60px -28px color-mix(in oklab, var(--accent) 55%, transparent);
+  --spot: color-mix(in oklab, var(--accent) 7.5%, transparent);
 }
 
 @theme inline {
@@ -194,8 +194,8 @@
     var(--shadow),
     inset 0 1px 0 0 var(--glass-highlight),
     inset 0 0 0 1px var(--glass-edge);
-  backdrop-filter: blur(28px) saturate(150%);
-  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  backdrop-filter: blur(var(--glass-blur, 28px)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 28px)) saturate(150%);
 }
 
 /* Реакция карточки на наведение: ярче граница и мягкое свечение */
@@ -347,8 +347,8 @@
 /* Производительность: на телефонах размытие слабее, без поддержки — плотная поверхность */
 @media (max-width: 640px) {
   .glass {
-    backdrop-filter: blur(18px) saturate(140%);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(calc(var(--glass-blur, 28px) * 0.65)) saturate(140%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur, 28px) * 0.65)) saturate(140%);
   }
   .app-backdrop::before,
   .app-backdrop::after,
@@ -429,4 +429,79 @@
   from {
     opacity: 0;
   }
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Персонализация (data-атрибуты на <html> задаёт AppearanceSync)      */
+/* ------------------------------------------------------------------ */
+
+:root[data-accent='sky'] { --accent: #2b86c9; --accent-2: #3fb6b0; }
+:root[data-accent='teal'] { --accent: #1f9a8a; --accent-2: #3c8fd6; }
+:root[data-accent='rose'] { --accent: #cf4f78; --accent-2: #9b6cf0; }
+:root[data-accent='amber'] { --accent: #b9761b; --accent-2: #d65f5f; }
+:root[data-accent='silver'] { --accent: #5d6577; --accent-2: #8a93a6; }
+.dark[data-accent='sky'] { --accent: #7cc4ff; --accent-2: #8ee6dc; }
+.dark[data-accent='teal'] { --accent: #6fd8c6; --accent-2: #8fd0ff; }
+.dark[data-accent='rose'] { --accent: #f29ab8; --accent-2: #c3a8ff; }
+.dark[data-accent='amber'] { --accent: #f0c27a; --accent-2: #f2a28a; }
+.dark[data-accent='silver'] { --accent: #c9ced9; --accent-2: #9aa3b5; }
+
+:root[data-blur='low'] { --glass-blur: 12px; }
+:root[data-blur='medium'] { --glass-blur: 28px; }
+:root[data-blur='high'] { --glass-blur: 46px; }
+
+:root[data-surface='frosted'] { --glass-top: rgba(255, 255, 255, 0.86); --glass-bottom: rgba(255, 255, 255, 0.72); }
+.dark[data-surface='frosted'] { --glass-top: rgba(40, 40, 50, 0.72); --glass-bottom: rgba(28, 28, 36, 0.62); }
+:root[data-surface='solid'] { --glass-top: #f8f9fb; --glass-bottom: #f3f4f8; --glass-blur: 0px; }
+.dark[data-surface='solid'] { --glass-top: #18181e; --glass-bottom: #141419; --glass-blur: 0px; }
+
+/* Компактная плотность: все размеры в rem уменьшаются пропорционально */
+:root[data-density='compact'] { font-size: 93.75%; }
+
+/* Уровень анимаций */
+:root[data-motion='reduced'] .app-backdrop::before,
+:root[data-motion='reduced'] .app-backdrop::after,
+:root[data-motion='reduced'] .app-backdrop > span,
+:root[data-motion='reduced'] .sidebar-live::before {
+  animation: none;
+}
+:root[data-motion='off'] *,
+:root[data-motion='off'] *::before,
+:root[data-motion='off'] *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* «Живой» стеклянный сайдбар: медленно плывущий блик внутри панели */
+.sidebar-live::before {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  pointer-events: none;
+  background:
+    radial-gradient(40% 30% at 30% 20%, color-mix(in oklab, var(--accent) 16%, transparent), transparent 70%),
+    radial-gradient(35% 25% at 70% 80%, color-mix(in oklab, var(--accent-2) 12%, transparent), transparent 70%);
+  animation: sidebar-drift 22s ease-in-out infinite alternate;
+}
+.sidebar-live > * {
+  position: relative;
+}
+@keyframes sidebar-drift {
+  to {
+    transform: translate3d(8%, 10%, 0) rotate(8deg);
+  }
+}
+
+/* Жидкий прогресс: волна движется только через transform */
+@keyframes liquid-wave {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.liquid-wave {
+  animation: liquid-wave 4s linear infinite;
+}
+.liquid-wave.slow {
+  animation-duration: 7s;
 }

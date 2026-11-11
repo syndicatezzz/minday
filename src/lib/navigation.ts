@@ -6,7 +6,9 @@ type Router = { push: (href: string) => void };
 let pending: ReturnType<typeof setTimeout> | null = null;
 
 export function prefersReducedMotion(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (typeof window === 'undefined') return false;
+  const level = document.documentElement.dataset.motion;
+  return (level !== undefined && level !== 'full') || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 /**

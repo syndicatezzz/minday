@@ -1,9 +1,13 @@
 'use client';
 
-import { CircleAlert } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { CircleAlert, WifiOff } from 'lucide-react';
+import { useOnline } from '@/lib/pwa';
 import type { ReactNode } from 'react';
 import { CommandPalette } from '@/components/command/CommandPalette';
 import { HabitModal } from '@/components/habits/HabitModal';
+import { ValueSheet } from '@/components/habits/ValueSheet';
+import { RecoveryModal } from '@/components/recovery/Recovery';
 import { Onboarding } from '@/components/onboarding/Onboarding';
 import { ReminderModal } from '@/components/reminders/ReminderModal';
 import { WeeklyReview } from '@/components/review/WeeklyReview';
@@ -20,6 +24,25 @@ import { Fab } from './Fab';
 import { BottomNavigation, MobileDrawer, MobileTopBar } from './MobileNav';
 import { PageTransition } from './PageTransition';
 import { Sidebar } from './Sidebar';
+
+function OfflineBadge() {
+  const online = useOnline();
+  return (
+    <AnimatePresence>
+      {!online && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          role="status"
+          className="glass-solid fixed top-[max(0.75rem,env(safe-area-inset-top))] left-1/2 z-[80] flex -translate-x-1/2 items-center gap-2 rounded-full px-4 py-2 text-xs font-medium text-muted"
+        >
+          <WifiOff size={13} className="text-warning" /> Офлайн — всё сохраняется на устройстве
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 
 function SaveErrorBar() {
   const saveError = useApp((s) => s.saveError);
@@ -93,6 +116,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <HabitModal />
       <ReminderModal />
       <WeeklyReview />
+      <ValueSheet />
+      <RecoveryModal />
       <TimerModal />
       <TimerChip />
       <TimerRunner />
@@ -100,6 +125,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <ConfirmDialog />
       <Onboarding />
       <Toaster />
+      <OfflineBadge />
     </>
   );
 }

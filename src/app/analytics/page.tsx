@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Activity, CircleCheck, Flame, ListChecks, Percent, TrendingDown, TrendingUp, Trophy } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { CompletionBars, RateArea, RateBars } from '@/components/analytics/Charts';
+import { Insights } from '@/components/analytics/Insights';
 import { Heatmap } from '@/components/calendar/Heatmap';
 import { habitIcon } from '@/components/habits/habit-icons';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -45,6 +46,7 @@ export default function AnalyticsPage() {
   const { today } = useToday();
   const ws = settings.weekStartsOn;
   const [period, setPeriod] = useState<Period>('30');
+  const [tab, setTab] = useState<'overview' | 'insights'>('overview');
   const habits = useMemo(() => Object.values(habitsMap).sort((a, b) => a.order - b.order), [habitsMap]);
   const [selectedId, setSelectedId] = useState<string>('');
   const selectedHabit = habitsMap[selectedId] ?? habits.find((h) => !h.archivedOn) ?? habits[0];
@@ -122,6 +124,20 @@ export default function AnalyticsPage() {
         description={`Все показатели рассчитаны по вашим отметкам с ${formatShortDate(start)} и учитывают только запланированные дни.`}
       />
 
+      <div className="mb-5">
+        <Segmented<'overview' | 'insights'>
+          ariaLabel="Раздел аналитики"
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: 'overview', label: 'Обзор' },
+            { value: 'insights', label: 'Наблюдения' },
+          ]}
+        />
+      </div>
+      {tab === 'insights' ? (
+        <Insights />
+      ) : (
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4 lg:space-y-5">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4">
           <StatsCard
@@ -219,6 +235,7 @@ export default function AnalyticsPage() {
           <HabitDetail habit={selectedHabit} habits={habits} onChange={setSelectedId} today={today} weekStartsOn={ws} />
         )}
       </motion.div>
+      )}
     </>
   );
 }

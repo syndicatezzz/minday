@@ -20,6 +20,17 @@ import {
 import type { DayState, DaySummary } from '@/lib/habits/schedule';
 import type { DateKey } from '@/types';
 import { springSnappy } from '@/lib/motion';
+import { MiniRing } from '@/components/ui/Progress';
+import { useApp } from '@/lib/store/app-store';
+
+const RING_COLOR: Record<string, string> = {
+  full: 'var(--success)',
+  partial: 'var(--warning)',
+  missed: 'var(--danger)',
+  today: 'var(--accent)',
+  empty: 'var(--fill-strong)',
+  future: 'var(--fill-strong)',
+};
 
 export const DAY_STATE_META: Record<DayState, { label: string; bg: string; fg: string; dot: string }> = {
   full: { label: 'Всё выполнено', bg: 'bg-success/16', fg: 'text-fg', dot: 'bg-success' },
@@ -48,6 +59,7 @@ export function monthGridRange(month: DateKey, weekStartsOn: 0 | 1) {
 }
 
 export function MonthCalendar({ month, direction, onMonthChange, selected, onSelect, today, weekStartsOn, summaries }: MonthCalendarProps) {
+  const variant = useApp((s) => s.data.settings.appearance.calendarStyle);
   const { start, end } = monthGridRange(month, weekStartsOn);
   const days = useMemo(() => {
     const n = diffDays(end, start) + 1;
@@ -150,7 +162,7 @@ export function MonthCalendar({ month, direction, onMonthChange, selected, onSel
                   className={cn(
                     'group relative flex h-11 min-w-0 flex-col items-center justify-center rounded-xl text-sm sm:h-auto sm:aspect-[1.15] sm:rounded-2xl',
                     'transition-[background-color,opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-95',
-                    meta.bg,
+                    variant === 'tinted' ? meta.bg : 'bg-transparent',
                     inMonth ? '' : 'opacity-35',
                     !isSelected && 'hover:ring-1 hover:ring-line',
                   )}
@@ -163,6 +175,11 @@ export function MonthCalendar({ month, direction, onMonthChange, selected, onSel
                       aria-hidden
                     />
                   )}
+                  {variant === 'rings' && s && s.state !== 'future' && s.scheduled > 0 && (
+                    <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 sm:top-[calc(50%-6px)]" aria-hidden>
+                      <MiniRing value={s.completed / s.scheduled} size={34} stroke={2.5} color={RING_COLOR[s.state]} />
+                    </span>
+                  )}
                   <span
                     className={cn(
                       'relative grid h-7 w-7 place-items-center rounded-full font-medium tabular-nums transition-colors duration-500',
@@ -171,13 +188,13 @@ export function MonthCalendar({ month, direction, onMonthChange, selected, onSel
                   >
                     {parseKey(d).d}
                   </span>
-                  {s && s.state !== 'future' && s.scheduled > 0 && (
+                  {s && s.state !== 'future' && s.scheduled > 0 && variant === 'tinted' && (
                     <span className="mt-0.5 hidden text-[10px] text-muted tabular-nums sm:block">
                       {s.completed}/{s.scheduled}
                     </span>
                   )}
-                  {s && s.state !== 'future' && s.state !== 'empty' && (
-                    <span className={cn('absolute bottom-1.5 h-1 w-1 rounded-full sm:hidden', meta.dot)} aria-hidden />
+                  {s && s.state !== 'future' && s.state !== 'empty' && variant !== 'rings' && (
+                    <span className={cn('absolute bottom-1.5 rounded-full', variant === 'dots' ? 'h-1.5 w-1.5' : 'h-1 w-1 sm:hidden', meta.dot)} aria-hidden />
                   )}
                 </button>
               );

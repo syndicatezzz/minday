@@ -4,12 +4,16 @@ import { MotionConfig } from 'framer-motion';
 import { useEffect, type ReactNode } from 'react';
 import { initAppStore } from '@/lib/store/app-store';
 import { startClock } from '@/lib/store/clock';
+import { initPwa } from '@/lib/pwa';
 import { ReminderRunner } from './ReminderRunner';
-import { ThemeSync } from './ThemeSync';
+import { AppearanceSync, ThemeSync } from './ThemeSync';
+import { useApp } from '@/lib/store/app-store';
 
 export function AppProviders({ children }: { children: ReactNode }) {
+  const motionLevel = useApp((s) => s.data.settings.appearance.motion);
   useEffect(() => {
     void initAppStore();
+    initPwa();
     return startClock();
   }, []);
 
@@ -36,8 +40,9 @@ export function AppProviders({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <MotionConfig reducedMotion="user">
+    <MotionConfig reducedMotion={motionLevel === 'full' ? 'user' : 'always'}>
       <ThemeSync />
+      <AppearanceSync />
       <ReminderRunner />
       {children}
     </MotionConfig>

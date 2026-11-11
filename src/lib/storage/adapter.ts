@@ -87,3 +87,6 @@ export const storage: StorageAdapter = new LocalStorageAdapter();
 
 /** Ключ для синхронного чтения темы до гидратации (без мигания). */
 export const THEME_KEY = `${P}:theme`;
+
+/** Копия настроек оформления для применения до гидратации. */
+export const APPEARANCE_KEY = `${P}:appearance`;

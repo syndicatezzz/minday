@@ -9,6 +9,7 @@ import { formatInstantTime, formatLongDate, formatTime, formatWeekday, timeToMin
 import { colorOf } from '@/lib/habits/meta';
 import type { DayItem, DaySummary } from '@/lib/habits/schedule';
 import { feedback } from '@/lib/feedback';
+import { formatAmount } from '@/lib/habits/values';
 import { EASE_OUT } from '@/lib/motion';
 import { actions } from '@/lib/store/app-store';
 import { toast } from '@/lib/store/toast-store';
@@ -125,9 +126,9 @@ export function DayDetails({
                           ? `${st.label} в ${formatInstantTime(it.entry.completedAt, timeZone, timeFormat)}`
                           : st.label}
                       </span>
-                      {it.habit.targetPerDay > 1 && it.status !== 'completed' && (it.entry?.count ?? 0) > 0 && (
-                        <span>
-                          {it.entry?.count}/{it.habit.targetPerDay}
+                      {it.habit.kind !== 'check' && (it.entry?.count ?? 0) > 0 && (
+                        <span className="tabular-nums">
+                          {formatAmount(it.habit, it.entry?.count ?? 0)} / {formatAmount(it.habit, it.habit.targetPerDay)}
                         </span>
                       )}
                     </p>

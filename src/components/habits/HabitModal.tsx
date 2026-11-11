@@ -18,7 +18,8 @@ import { useToday } from '@/lib/store/clock';
 import { toast } from '@/lib/store/toast-store';
 import { useStore } from '@/lib/store/create-store';
 import { ui, uiStore } from '@/lib/store/ui-store';
-import type { Habit, HabitCategory, HabitColor, HabitInput, Schedule, Weekday } from '@/types';
+import type { Habit, HabitCategory, HabitColor, HabitInput, HabitKind, Schedule, Weekday } from '@/types';
+import { KIND_META } from '@/lib/habits/values';
 import { HABIT_ICON_NAMES, habitIcon } from './habit-icons';
 import { useDeleteHabit } from './useHabitActions';
 
@@ -39,6 +40,10 @@ interface FormState {
   reminderTime: string;
   startDate: string;
   targetPerDay: number;
+  measure: HabitKind;
+  unit: string;
+  hasMin: boolean;
+  minTarget: number;
 }
 
 function initialState(habit: Habit | null, reminderTime: string | null, reminderOn: boolean, today: string): FormState {
@@ -58,6 +63,10 @@ function initialState(habit: Habit | null, reminderTime: string | null, reminder
       reminderTime: '08:00',
       startDate: today,
       targetPerDay: 1,
+      measure: 'check',
+      unit: '',
+      hasMin: false,
+      minTarget: 1,
     };
   }
   const s = currentSchedule(habit, today);
@@ -76,10 +85,14 @@ function initialState(habit: Habit | null, reminderTime: string | null, reminder
     reminderTime: reminderTime ?? habit.time ?? '08:00',
     startDate: habit.startDate,
     targetPerDay: habit.targetPerDay,
+    measure: habit.kind,
+    unit: habit.unit,
+    hasMin: habit.minTarget !== null,
+    minTarget: habit.minTarget ?? Math.max(1, Math.round(habit.targetPerDay / 5)),
   };
 }
 
-type Errors = Partial<Record<'name' | 'days' | 'time' | 'reminderTime' | 'startDate', string>>;
+type Errors = Partial<Record<'name' | 'days' | 'time' | 'reminderTime' | 'startDate' | 'target', string>>;
 
 function validate(f: FormState): Errors {
   const e: Errors = {};
@@ -90,6 +103,10 @@ function validate(f: FormState): Errors {
   if (f.hasTime && !isTimeString(f.time)) e.time = 'Укажите время в формате ЧЧ:ММ';
   if (f.reminderEnabled && !isTimeString(f.reminderTime)) e.reminderTime = 'Укажите время напоминания';
   if (!isDateKey(f.startDate)) e.startDate = 'Укажите корректную дату';
+  if (f.measure !== 'check') {
+    if (!(f.targetPerDay > 0)) e.target = 'Цель должна быть больше нуля';
+    else if (f.hasMin && !(f.minTarget > 0 && f.minTarget < f.targetPerDay)) e.target = 'Минимум должен быть меньше основной цели';
+  }
   return e;
 }
 
@@ -158,7 +175,10 @@ export function HabitModal() {
       category: form.category,
       schedule,
       time: form.hasTime ? form.time : null,
-      targetPerDay: form.targetPerDay,
+      targetPerDay: form.measure === 'check' ? 1 : form.targetPerDay,
+      kind: form.measure,
+      unit: form.measure === 'check' ? '' : form.unit.trim() || KIND_META[form.measure].defaultUnit,
+      minTarget: form.measure !== 'check' && form.hasMin ? form.minTarget : null,
       startDate: form.startDate,
       reminderEnabled: form.reminderEnabled,
       reminderTime: form.reminderEnabled ? form.reminderTime : null,
@@ -401,12 +421,78 @@ export function HabitModal() {
           </div>
         </div>
 
+        {/* Тип измерения и цели */}
+        <fieldset className="space-y-3">
+          <legend className="mb-2 text-[13px] font-medium text-muted">Как измерять</legend>
+          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-5" role="radiogroup" aria-label="Тип привычки">
+            {(Object.keys(KIND_META) as HabitKind[]).map((k) => {
+              const active = form.measure === k;
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => {
+                    set('measure', k);
+                    if (k !== 'check' && form.targetPerDay <= 1) set('targetPerDay', k === 'duration' ? 15 : k === 'numeric' ? 10 : 3);
+                    if (!form.unit || Object.values(KIND_META).some((m) => m.defaultUnit === form.unit)) set('unit', KIND_META[k].defaultUnit);
+                  }}
+                  className={cn(
+                    'relative rounded-2xl border px-3 py-2.5 text-left transition-colors',
+                    active ? 'border-accent/45 bg-accent/12' : 'border-line bg-fill hover:bg-fill-strong',
+                  )}
+                >
+                  <span className={cn('block text-[13px] font-medium', active ? 'text-fg' : 'text-muted')}>{KIND_META[k].label}</span>
+                  <span className="mt-0.5 block text-[11px] leading-snug text-subtle">{KIND_META[k].hint}</span>
+                </button>
+              );
+            })}
+          </div>
+          {form.measure !== 'check' && (
+            <div className="glass-subtle space-y-4 rounded-2xl p-4">
+              <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
+                <Field label="Основная цель за день" htmlFor={id('target')} error={errors.target}>
+                  <TextInput
+                    id={id('target')}
+                    type="number"
+                    inputMode="decimal"
+                    min={1}
+                    step={KIND_META[form.measure].step}
+                    value={String(form.targetPerDay)}
+                    onChange={(e) => set('targetPerDay', Number(e.target.value))}
+                  />
+                </Field>
+                <Field label="Единица" htmlFor={id('unit')}>
+                  <TextInput id={id('unit')} value={form.unit} maxLength={12} placeholder={KIND_META[form.measure].defaultUnit} onChange={(e) => set('unit', e.target.value)} />
+                </Field>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-fg">Минимальная цель</p>
+                  <p className="text-xs text-subtle">В трудный день достаточно минимума — серия сохранится</p>
+                </div>
+                <Switch size="sm" checked={form.hasMin} onChange={(v) => set('hasMin', v)} label="Минимальная цель" />
+              </div>
+              {form.hasMin && (
+                <Field label="Минимум за день" htmlFor={id('min')}>
+                  <TextInput
+                    id={id('min')}
+                    type="number"
+                    inputMode="decimal"
+                    min={1}
+                    value={String(form.minTarget)}
+                    onChange={(e) => set('minTarget', Number(e.target.value))}
+                  />
+                </Field>
+              )}
+            </div>
+          )}
+        </fieldset>
+
         <div className="grid gap-6 sm:grid-cols-2">
           <Field label="Дата начала" htmlFor={id('startDate')} error={errors.startDate}>
             <TextInput id={id('startDate')} type="date" value={form.startDate} onChange={(e) => set('startDate', e.target.value)} />
-          </Field>
-          <Field label="Повторений за день" hint={form.targetPerDay > 1 ? 'Отмечайте каждое повторение отдельно' : 'Одна отметка в день'}>
-            <Stepper label="Повторений за день" value={form.targetPerDay} min={1} max={20} onChange={(v) => set('targetPerDay', v)} />
           </Field>
         </div>
 

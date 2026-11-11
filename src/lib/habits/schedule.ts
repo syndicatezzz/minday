@@ -116,6 +116,8 @@ export function resolveDayItem(
   if (!isActiveOn(habit, date)) return null;
   const schedule = scheduleAt(habit, date);
   const entry = getEntry(entries, habit.id, date);
+  // Выполнение перенесено на другой день — в этот день привычка не требуется
+  if (entry?.status === 'moved') return null;
   const done = isCompleted(entry);
 
   if (schedule.type === 'weekly') {
@@ -130,7 +132,8 @@ export function resolveDayItem(
   }
 
   const wd = weekdayOf(date);
-  if (schedule.type === 'weekdays' && !schedule.days.includes(wd)) return null;
+  // Дополнительное выполнение (перенесено сюда с другого дня) действует и вне расписания
+  if (schedule.type === 'weekdays' && !schedule.days.includes(wd) && !entry?.extra) return null;
 
   let status: DayStatus;
   if (done) status = 'completed';

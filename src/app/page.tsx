@@ -7,6 +7,8 @@ import { SevenDayStats, QuoteCard, StreakCard, WeekStrip } from '@/components/da
 import { Celebration } from '@/components/dashboard/Celebration';
 import { TodayProgress } from '@/components/dashboard/TodayProgress';
 import { WeeklyReviewCard } from '@/components/dashboard/WeeklyReviewCard';
+import { FocusWidget, GoalsWidget, JournalWidget } from '@/components/dashboard/MiniWidgets';
+import { RecoveryCard } from '@/components/recovery/Recovery';
 import { QuickAdd } from '@/components/habits/QuickAdd';
 import { HabitCard } from '@/components/habits/HabitCard';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -34,6 +36,7 @@ export default function DashboardPage() {
   const habitsMap = useApp((s) => s.data.habits);
   const entries = useApp((s) => s.data.entries);
   const settings = useApp((s) => s.data.settings);
+  const widgets = settings.appearance.dashboard;
   const { today, nowMinutes, greeting, timeZone } = useToday();
   const habits = useMemo(() => Object.values(habitsMap), [habitsMap]);
   const ws = settings.weekStartsOn;
@@ -126,6 +129,7 @@ export default function DashboardPage() {
       ) : (
         <motion.div variants={stagger} initial="hidden" animate="show" className="grid gap-4 lg:grid-cols-12 lg:gap-5">
           <div className="space-y-4 lg:col-span-8 lg:space-y-5">
+            <RecoveryCard />
             <TodayProgress summary={summary} />
 
             <section aria-labelledby="today-habits" className="pt-2">
@@ -189,11 +193,30 @@ export default function DashboardPage() {
           </div>
 
           <div className="space-y-4 lg:col-span-4 lg:space-y-5">
-            <StreakCard current={streak.current} best={streak.best} />
-            <WeekStrip days={week} today={today} />
-            <WeeklyReviewCard days={week} />
-            <SevenDayStats days={last7} />
-            <QuoteCard text={quote.text} author={quote.author} />
+            {widgets
+              .filter((w) => w.visible)
+              .map(({ widget }) => {
+                switch (widget) {
+                  case 'streak':
+                    return <StreakCard key={widget} current={streak.current} best={streak.best} />;
+                  case 'week':
+                    return <WeekStrip key={widget} days={week} today={today} />;
+                  case 'review':
+                    return <WeeklyReviewCard key={widget} days={week} />;
+                  case 'last7':
+                    return <SevenDayStats key={widget} days={last7} />;
+                  case 'goals':
+                    return <GoalsWidget key={widget} />;
+                  case 'focus':
+                    return <FocusWidget key={widget} />;
+                  case 'journal':
+                    return <JournalWidget key={widget} />;
+                  case 'quote':
+                    return <QuoteCard key={widget} text={quote.text} author={quote.author} />;
+                  default:
+                    return null;
+                }
+              })}
           </div>
         </motion.div>
       )}

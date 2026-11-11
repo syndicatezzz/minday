@@ -24,6 +24,9 @@ interface DemoHabit {
   schedule: Schedule;
   time: string | null;
   target: number;
+  kind?: Habit['kind'];
+  unit?: string;
+  min?: number;
   probability: number;
   startOffset: number;
   doneToday: boolean;
@@ -47,26 +50,32 @@ const DEMO: DemoHabit[] = [
   },
   {
     name: 'Медитация',
-    description: '10 минут тишины и дыхания',
+    description: 'Тишина и дыхание',
     icon: 'Leaf',
     color: 'violet',
     category: 'mind',
     schedule: { type: 'daily' },
     time: '08:00',
-    target: 1,
+    target: 10,
+    kind: 'duration',
+    unit: 'мин',
+    min: 3,
     probability: 0.74,
     startOffset: 84,
     doneToday: true,
   },
   {
     name: 'Чтение',
-    description: '20 страниц нехудожественной книги',
+    description: 'Нехудожественная книга',
     icon: 'BookOpen',
     color: 'amber',
     category: 'learning',
     schedule: { type: 'daily' },
     time: '21:30',
-    target: 1,
+    target: 20,
+    kind: 'numeric',
+    unit: 'стр.',
+    min: 2,
     probability: 0.68,
     startOffset: 70,
     doneToday: false,
@@ -130,7 +139,7 @@ export function buildDemoData(today: DateKey, baseSettings: Settings): AppData {
   const rand = mulberry32(20241107);
   const data = createEmptyData();
   data.settings = { ...baseSettings };
-  data.meta = { onboarded: true, dismissedHints: [], createdAt: new Date().toISOString(), celebratedOn: null };
+  data.meta = { ...data.meta, onboarded: true };
   const now = new Date().toISOString();
 
   DEMO.forEach((d, i) => {
@@ -146,6 +155,9 @@ export function buildDemoData(today: DateKey, baseSettings: Settings): AppData {
       schedules: [{ from: EPOCH, schedule: d.schedule }],
       time: d.time,
       targetPerDay: d.target,
+      kind: d.kind ?? (d.target > 1 ? 'count' : 'check'),
+      unit: d.unit ?? (d.target > 1 ? 'стак.' : ''),
+      minTarget: d.min ?? null,
       startDate,
       pauses: [],
       archivedOn: null,
@@ -177,7 +189,7 @@ export function buildDemoData(today: DateKey, baseSettings: Settings): AppData {
         habitId: id,
         date: day,
         status: 'completed',
-        count: d.target,
+        count: d.min && rand() < 0.25 ? d.min + Math.floor(rand() * (d.target - d.min)) : d.target,
         completedAt: `${day}T${String(Math.max(0, hh - 7)).padStart(2, '0')}:${String(mm).padStart(2, '0')}:00.000Z`,
         updatedAt: now,
       };
@@ -200,7 +212,7 @@ export function buildDemoData(today: DateKey, baseSettings: Settings): AppData {
         habitId: id,
         date: today,
         status: 'pending',
-        count: 3,
+        count: d.kind === 'numeric' ? 0 : 3,
         completedAt: null,
         updatedAt: now,
       };
@@ -213,5 +225,61 @@ export function buildDemoData(today: DateKey, baseSettings: Settings): AppData {
     }
   });
 
+  // Рутины, цель, дневник и сессии фокуса — чтобы новые разделы не были пустыми
+  const now2 = new Date().toISOString();
+  data.routines = {
+    demo_r_morning: { id: 'demo_r_morning', name: 'Утренняя рутина', icon: 'Sun', color: 'amber', habitIds: ['demo_h1', 'demo_h2', 'demo_h7'], createdAt: now2, updatedAt: now2, order: 0 },
+    demo_r_evening: { id: 'demo_r_evening', name: 'Вечерняя рутина', icon: 'Moon', color: 'violet', habitIds: ['demo_h3', 'demo_h5'], createdAt: now2, updatedAt: now2, order: 1 },
+  };
+  data.goals = {
+    demo_g1: {
+      id: 'demo_g1',
+      name: 'Прочитать 12 книг за год',
+      description: 'Регулярное чтение каждый вечер',
+      color: 'amber',
+      icon: 'BookOpen',
+      startDate: addDays(today, -60),
+      targetDate: addDays(today, 120),
+      habitIds: ['demo_h3'],
+      achievedOn: null,
+      history: [{ date: addDays(today, -60), type: 'created' }],
+      createdAt: now2,
+      updatedAt: now2,
+    },
+    demo_g2: {
+      id: 'demo_g2',
+      name: 'Стать сильнее и выносливее',
+      description: 'Тренировки и прогулки как основа формы',
+      color: 'coral',
+      icon: 'Dumbbell',
+      startDate: addDays(today, -45),
+      targetDate: addDays(today, 45),
+      habitIds: ['demo_h4', 'demo_h6'],
+      achievedOn: null,
+      history: [{ date: addDays(today, -45), type: 'created' }],
+      createdAt: now2,
+      updatedAt: now2,
+    },
+  };
+  const notes = ['Спокойный день', 'Много работы, но успел почитать', 'Хорошая тренировка', 'Мало спал', 'Отличное настроение', 'Прогулка помогла переключиться'];
+  for (let i = 1; i <= 30; i++) {
+    if (rand() < 0.35) continue;
+    const d = addDays(today, -i);
+    data.journal[d] = { date: d, mood: 2 + Math.floor(rand() * 4), note: notes[Math.floor(rand() * notes.length)], reflection: '', updatedAt: now2 };
+  }
+  for (let i = 0; i < 18; i++) {
+    const d = addDays(today, -Math.floor(rand() * 20));
+    const planned = [10, 15, 25][i % 3] * 60_000;
+    const done = rand() > 0.2;
+    data.focusSessions[`demo_f${i}`] = {
+      id: `demo_f${i}`,
+      habitId: i % 2 ? 'demo_h2' : 'demo_h3',
+      date: d,
+      startedAt: `${d}T03:00:00.000Z`,
+      plannedMs: planned,
+      actualMs: done ? planned : Math.round(planned * 0.6),
+      completed: done,
+    };
+  }
   return data;
 }

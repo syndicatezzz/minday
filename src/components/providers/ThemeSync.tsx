@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { prefersReducedMotion } from '@/lib/navigation';
-import { THEME_KEY } from '@/lib/storage/adapter';
+import { APPEARANCE_KEY, THEME_KEY } from '@/lib/storage/adapter';
 import { useApp } from '@/lib/store/app-store';
 
 function toggleClasses(dark: boolean) {
@@ -52,5 +52,24 @@ export function ThemeSync() {
     return () => mq.removeEventListener('change', onChange);
   }, [theme, status]);
 
+  return null;
+}
+
+/** Применяет пользовательское оформление через data-атрибуты на <html>. */
+export function AppearanceSync() {
+  const a = useApp((s) => s.data.settings.appearance);
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.accent = a.accent;
+    root.dataset.blur = a.blur;
+    root.dataset.surface = a.surface;
+    root.dataset.density = a.density;
+    root.dataset.motion = a.motion;
+    try {
+      localStorage.setItem(APPEARANCE_KEY, JSON.stringify({ accent: a.accent, blur: a.blur, surface: a.surface, density: a.density, motion: a.motion }));
+    } catch {
+      /* ignore */
+    }
+  }, [a.accent, a.blur, a.surface, a.density, a.motion]);
   return null;
 }

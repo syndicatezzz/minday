@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion, useMotionValue, useTransform, type PanInfo } from 'framer-motion';
-import { Check, Clock, Ellipsis, Flame, Minus, Pencil, RotateCcw, SkipForward, Timer, Trash2 } from 'lucide-react';
+import { CalendarArrowUp, Check, Clock, Ellipsis, Flame, Minus, Pencil, PenLine, RotateCcw, SkipForward, Timer, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Menu } from '@/components/ui/Menu';
 import { cn } from '@/lib/cn';
@@ -11,6 +11,7 @@ import { colorOf } from '@/lib/habits/meta';
 import type { DayItem } from '@/lib/habits/schedule';
 import { describeSchedule, scheduleAt } from '@/lib/habits/schedule';
 import { useCoarsePointer } from '@/lib/hooks';
+import { completionLevel, entryValue, formatAmount, isMeasured, needsValueInput } from '@/lib/habits/values';
 import { DURATION, EASE_OUT, springBouncy, springSnappy, tween } from '@/lib/motion';
 import { actions } from '@/lib/store/app-store';
 import { toast } from '@/lib/store/toast-store';
@@ -41,6 +42,8 @@ export function CheckButton({
   onClick,
   label,
   size = 48,
+  measured,
+  minimum,
 }: {
   done: boolean;
   count: number;
@@ -49,8 +52,10 @@ export function CheckButton({
   onClick: () => void;
   label: string;
   size?: number;
+  measured?: boolean;
+  minimum?: boolean;
 }) {
-  const multi = target > 1;
+  const multi = measured ?? target > 1;
   const r = size / 2 - 3;
   const c = 2 * Math.PI * r;
   const progress = done ? 1 : multi ? count / target : 0;
@@ -123,7 +128,9 @@ export function CheckButton({
         )}
       </AnimatePresence>
       <span className="relative z-10">
-        {done ? (
+        {minimum && !done ? (
+          <Check size={size * 0.38} className="text-success" strokeWidth={3} aria-hidden />
+        ) : done ? (
           <motion.svg width={size * 0.42} height={size * 0.42} viewBox="0 0 24 24" fill="none" aria-hidden>
             <motion.path
               d="M5 12.5l4.5 4.5L19 7.5"
@@ -138,8 +145,14 @@ export function CheckButton({
           </motion.svg>
         ) : multi ? (
           <span className="text-[12px] font-semibold text-fg tabular-nums">
-            {count}
-            <span className="text-subtle">/{target}</span>
+            {`${fmt(count)}/${fmt(target)}`.length <= 5 ? (
+              <>
+                {fmt(count)}
+                <span className="text-subtle">/{fmt(target)}</span>
+              </>
+            ) : (
+              `${Math.min(999, Math.round((count / target) * 100))}%`
+            )}
           </span>
         ) : (
           <Check size={size * 0.38} className="text-subtle opacity-40" aria-hidden />
@@ -151,13 +164,20 @@ export function CheckButton({
 
 const SWIPE_THRESHOLD = 88;
 
+function fmt(v: number): string {
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+}
+
 export function HabitCard({ item, date, nowMinutes, timeFormat, timeZone, streak }: HabitCardProps) {
   const { habit, entry, status, flexible, weekly } = item;
   const color = colorOf(habit.color);
   const Icon = habitIcon(habit.icon);
   const done = status === 'completed';
   const missed = status === 'missed';
-  const count = entry?.status === 'missed' ? 0 : entry?.count ?? 0;
+  const count = entryValue(entry);
+  const level = completionLevel(habit, count);
+  const measured = isMeasured(habit);
+  const fullDone = done && (!measured || level === 'full');
   const overdue = status === 'pending' && habit.time !== null && timeToMinutes(habit.time) < nowMinutes;
   const deleteHabit = useDeleteHabit();
   const coarse = useCoarsePointer();
@@ -170,10 +190,13 @@ export function HabitCard({ item, date, nowMinutes, timeFormat, timeZone, streak
   const iconScaleR = useTransform(x, [20, SWIPE_THRESHOLD], [0.6, 1.1]);
   const iconScaleL = useTransform(x, [-SWIPE_THRESHOLD, -20], [1.1, 0.6]);
 
-  const onCheck = () => checkHabit(habit.id, date);
+  const onCheck = () => {
+    if (needsValueInput(habit) && !fullDone) ui.openValueSheet(habit.id, date);
+    else checkHabit(habit.id, date);
+  };
 
   const onDragEnd = (_: unknown, info: PanInfo) => {
-    if (info.offset.x > SWIPE_THRESHOLD) onCheck();
+    if (info.offset.x > SWIPE_THRESHOLD) checkHabit(habit.id, date);
     else if (info.offset.x < -SWIPE_THRESHOLD && canSkip) {
       actions.skipHabit(habit.id, date);
       feedback.tap();
@@ -182,7 +205,9 @@ export function HabitCard({ item, date, nowMinutes, timeFormat, timeZone, streak
   };
 
   const statusPill = done
-    ? { text: entry?.completedAt ? `Готово · ${formatInstantTime(entry.completedAt, timeZone, timeFormat)}` : 'Выполнено', cls: 'text-success bg-success/10' }
+    ? level === 'minimum'
+      ? { text: 'Минимум выполнен', cls: 'text-success bg-success/10' }
+      : { text: entry?.completedAt ? `Готово · ${formatInstantTime(entry.completedAt, timeZone, timeFormat)}` : 'Выполнено', cls: 'text-success bg-success/10' }
     : missed
       ? { text: 'Пропущено', cls: 'text-danger bg-danger/10' }
       : overdue
@@ -268,6 +293,11 @@ export function HabitCard({ item, date, nowMinutes, timeFormat, timeZone, streak
                 <Clock size={12} /> {formatTime(habit.time, timeFormat)}
               </span>
             )}
+            {measured && (
+              <span className={cn('tabular-nums', level === 'full' ? 'text-success' : level === 'minimum' ? 'text-success/80' : '')}>
+                {formatAmount(habit, count)} / {formatAmount(habit, habit.targetPerDay)}
+              </span>
+            )}
             {flexible && weekly && (
               <span>
                 Неделя: {weekly.done}/{weekly.target}
@@ -298,7 +328,7 @@ export function HabitCard({ item, date, nowMinutes, timeFormat, timeZone, streak
 
         <div className="relative flex shrink-0 items-center gap-0.5">
           <AnimatePresence initial={false}>
-            {habit.targetPerDay > 1 && count > 0 && !done && (
+            {(habit.kind === 'count' || habit.kind === 'sessions') && count > 0 && !fullDone && (
               <motion.button
                 type="button"
                 initial={{ opacity: 0, scale: 0.6 }}
@@ -316,17 +346,21 @@ export function HabitCard({ item, date, nowMinutes, timeFormat, timeZone, streak
             )}
           </AnimatePresence>
           <CheckButton
-            done={done}
+            done={fullDone}
+            minimum={done && !fullDone}
+            measured={measured}
             count={count}
             target={habit.targetPerDay}
             color={color}
             onClick={onCheck}
             label={
-              done
+              fullDone
                 ? `Снять отметку: ${habit.name}`
-                : habit.targetPerDay > 1
-                  ? `Добавить повторение: ${habit.name} (${count} из ${habit.targetPerDay})`
-                  : `Отметить выполненной: ${habit.name}`
+                : needsValueInput(habit)
+                  ? `Записать результат: ${habit.name} (${formatAmount(habit, count)} из ${formatAmount(habit, habit.targetPerDay)})`
+                  : measured
+                    ? `Добавить: ${habit.name} (${count} из ${habit.targetPerDay})`
+                    : `Отметить выполненной: ${habit.name}`
             }
           />
           <Menu
@@ -334,7 +368,17 @@ export function HabitCard({ item, date, nowMinutes, timeFormat, timeZone, streak
             trigger={<Ellipsis size={18} />}
             items={[
               { label: 'Изменить', icon: <Pencil size={15} />, onSelect: () => ui.openHabitModal(habit.id) },
-              { label: 'Запустить таймер', icon: <Timer size={15} />, onSelect: () => ui.openTimer(habit.id) },
+              { label: 'Записать результат', icon: <PenLine size={15} />, onSelect: () => ui.openValueSheet(habit.id, date), hidden: !measured },
+              { label: 'Фокус-сессия', icon: <Timer size={15} />, onSelect: () => ui.openTimer(habit.id) },
+              {
+                label: 'Перенести на завтра',
+                icon: <CalendarArrowUp size={15} />,
+                hidden: flexible || done,
+                onSelect: () => {
+                  actions.moveToTomorrow(habit.id, date);
+                  toast({ tone: 'info', title: 'Перенесено на завтра', description: habit.name, action: { label: 'Отменить', onClick: () => actions.clearEntry(habit.id, date) } });
+                },
+              },
               {
                 label: 'Пропустить сегодня',
                 icon: <SkipForward size={15} />,

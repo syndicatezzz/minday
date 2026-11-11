@@ -1,8 +1,8 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useDragControls, type PanInfo } from 'framer-motion';
 import { X } from 'lucide-react';
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { EASE_OUT } from '@/lib/motion';
 import { Portal } from './Portal';
@@ -29,6 +29,15 @@ export function Modal({ open, onClose, title, description, children, footer, siz
   const descId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
+  const dragControls = useDragControls();
+  const [sheet, setSheet] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    const update = () => setSheet(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
   onCloseRef.current = onClose;
 
   useEffect(() => {
@@ -104,6 +113,14 @@ export function Modal({ open, onClose, title, description, children, footer, siz
               aria-labelledby={titleId}
               aria-describedby={description ? descId : undefined}
               tabIndex={-1}
+              drag={sheet ? 'y' : false}
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0, bottom: 0.6 }}
+              dragListener={false}
+              dragControls={dragControls}
+              onDragEnd={(_e: unknown, info: PanInfo) => {
+                if (info.offset.y > 110 || info.velocity.y > 600) onClose();
+              }}
               initial={{ opacity: 0, y: 48, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: 0.42, ease: EASE_OUT } }}
               exit={{ opacity: 0, y: 24, scale: 0.98, transition: { duration: 0.2 } }}
@@ -112,8 +129,19 @@ export function Modal({ open, onClose, title, description, children, footer, siz
                 widths[size],
               )}
             >
-              <div className="mx-auto mt-2.5 h-1 w-10 rounded-full bg-fill-strong sm:hidden" aria-hidden />
-              <header className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 sm:px-7 sm:pt-7">
+              <div
+                className="flex h-6 shrink-0 touch-none items-center justify-center sm:hidden"
+                onPointerDown={(e) => dragControls.start(e)}
+                aria-hidden
+              >
+                <span className="h-1 w-10 rounded-full bg-fill-strong" />
+              </div>
+              <header
+                className="flex touch-none items-start justify-between gap-4 px-6 pt-1 pb-4 sm:touch-auto sm:px-7 sm:pt-7"
+                onPointerDown={(e) => {
+                  if (sheet && !(e.target as HTMLElement).closest('button')) dragControls.start(e);
+                }}
+              >
                 <div className="min-w-0">
                   <h2 id={titleId} className="text-xl font-semibold tracking-[-0.02em] text-fg">
                     {title}

@@ -1,7 +1,8 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Pause, Play, RotateCcw, Timer as TimerIcon } from 'lucide-react';
+import { Pause, Play, RotateCcw, Square, Timer as TimerIcon } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
 import { checkHabit } from '@/components/habits/useHabitActions';
 import { Button } from '@/components/ui/Button';
@@ -19,6 +20,7 @@ import { formatClock, timer, timerStore } from '@/lib/store/timer-store';
 import { toast } from '@/lib/store/toast-store';
 import { ui, uiStore } from '@/lib/store/ui-store';
 import { computeToday } from '@/lib/today';
+import { notificationChannel } from '@/lib/reminders/notifications';
 
 const PRESETS = [1, 5, 10, 15, 25, 45];
 
@@ -28,24 +30,32 @@ export function TimerRunner() {
   useEffect(() => {
     if (!running) return;
     const id = window.setInterval(() => {
-      if (!timer.tick()) return;
+      const r = timer.tick();
+      if (!r.finished) return;
       feedback.timer();
       const { habitId } = timerStore.get();
-      const habit = habitId ? appStore.get().data.habits[habitId] : undefined;
+      const data = appStore.get().data;
+      const habit = habitId ? data.habits[habitId] : undefined;
+      const date = computeToday(data.settings);
+      const done = habit ? data.entries[`${habit.id}:${date}`]?.status === 'completed' : false;
+      if (data.settings.notificationsEnabled) {
+        void notificationChannel.show({ title: 'Фокус-сессия завершена', body: habit ? habit.name : 'Время вышло', tag: 'focus' });
+      }
       toast({
         tone: 'reminder',
-        title: 'Таймер завершён',
-        description: habit ? habit.name : 'Время вышло',
+        title: 'Сессия фокуса завершена',
+        description: habit
+          ? r.applied === 'duration'
+            ? `${habit.name}: время добавлено к результату`
+            : r.applied === 'sessions'
+              ? `${habit.name}: +1 сессия`
+              : habit.name
+          : 'Время вышло',
         duration: 10_000,
-        action: habit
-          ? {
-              label: 'Отметить',
-              onClick: () => {
-                const date = computeToday(appStore.get().data.settings);
-                if (appStore.get().data.entries[`${habit.id}:${date}`]?.status !== 'completed') checkHabit(habit.id, date);
-              },
-            }
-          : undefined,
+        action:
+          habit && !done && !r.applied
+            ? { label: 'Отметить', onClick: () => checkHabit(habit.id, computeToday(appStore.get().data.settings)) }
+            : undefined,
       });
     }, 250);
     return () => window.clearInterval(id);
@@ -57,7 +67,8 @@ export function TimerRunner() {
 export function TimerChip() {
   const s = useStore(timerStore, (x) => x);
   const open = useStore(uiStore, (x) => x.timer.open);
-  const visible = !open && (s.endAt !== null || (s.remainingMs > 0 && s.remainingMs < s.durationMs));
+  const pathname = usePathname();
+  const visible = !open && pathname !== '/focus' && (s.endAt !== null || (s.remainingMs > 0 && s.remainingMs < s.durationMs));
   return (
     <Portal>
       <AnimatePresence>
@@ -148,7 +159,7 @@ export function TimerModal() {
         </div>
 
         <div className="mt-4 flex items-center gap-2">
-          <Button variant="ghost" size="icon" aria-label="Сбросить" onClick={() => timer.reset()}>
+          <Button variant="ghost" size="icon" aria-label="Сбросить без сохранения" onClick={() => timer.reset()}>
             <RotateCcw size={18} />
           </Button>
           <motion.button
@@ -161,7 +172,18 @@ export function TimerModal() {
           >
             {running ? <Pause size={24} /> : <Play size={24} className="ml-0.5" />}
           </motion.button>
-          <div className="h-11 w-11" aria-hidden />
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Остановить и сохранить"
+            disabled={!t.startedAt}
+            onClick={() => {
+              const ms = timer.stop();
+              if (ms) toast({ tone: 'info', title: 'Сессия сохранена', description: `${Math.round(ms / 60000)} мин в истории фокуса` });
+            }}
+          >
+            <Square size={16} />
+          </Button>
         </div>
 
         <div className="mt-6 w-full space-y-4">

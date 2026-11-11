@@ -19,7 +19,7 @@ export function SidebarContent({ layoutKey, onNavigate }: { layoutKey: string; o
   useEffect(() => setShortcut(/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K'), []);
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between px-2 pt-1 pb-7">
+      <div className="flex items-center justify-between px-2 pt-1 pb-6">
         <AppLink href="/" onClick={onNavigate} aria-label="На главную" className="rounded-xl">
           <Logo />
         </AppLink>
@@ -30,7 +30,7 @@ export function SidebarContent({ layoutKey, onNavigate }: { layoutKey: string; o
         )}
       </div>
 
-      <p className="px-3.5 pb-2 text-[11px] font-medium tracking-[0.12em] text-subtle uppercase">Меню</p>
+      <div className="scrollbar-none -mx-1 min-h-0 flex-1 overflow-y-auto px-1">
       <NavList layoutKey={layoutKey} onNavigate={onNavigate} />
 
       <div className="mt-6 px-1">
@@ -47,7 +47,9 @@ export function SidebarContent({ layoutKey, onNavigate }: { layoutKey: string; o
         </button>
       </div>
 
-      <div className="mt-auto space-y-3 pt-6">
+      </div>
+
+      <div className="space-y-3 pt-4">
         <AppLink
           href="/settings"
           onClick={onNavigate}
@@ -68,7 +70,7 @@ export function SidebarContent({ layoutKey, onNavigate }: { layoutKey: string; o
 export function Sidebar({ className }: { className?: string }) {
   return (
     <aside className={cn('fixed inset-y-0 left-0 z-30 hidden w-[272px] p-4 lg:block', className)}>
-      <div className="glass h-full rounded-[28px] p-4">
+      <div className="glass sidebar-live h-full overflow-hidden rounded-[28px] p-4">
         <SidebarContent layoutKey="desktop" />
       </div>
     </aside>

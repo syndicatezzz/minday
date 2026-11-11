@@ -5,14 +5,17 @@ import { AppLink } from '@/components/layout/AppLink';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/cn';
 import { springSnappy } from '@/lib/motion';
-import { NAV_ITEMS, isActivePath } from '@/lib/nav';
+import { NAV_GROUPS, NAV_ITEMS, isActivePath } from '@/lib/nav';
 
 export function NavList({ layoutKey, onNavigate }: { layoutKey: string; onNavigate?: () => void }) {
   const pathname = usePathname() ?? '/';
   return (
-    <nav aria-label="Основная навигация">
+    <nav aria-label="Основная навигация" className="space-y-5">
+      {NAV_GROUPS.map((group) => (
+        <div key={group.id}>
+          <p className="px-3.5 pb-1.5 text-[10.5px] font-medium tracking-[0.14em] text-subtle uppercase">{group.label}</p>
       <ul className="space-y-1">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        {NAV_ITEMS.filter((i) => i.group === group.id).map(({ href, label, icon: Icon }) => {
           const active = isActivePath(pathname, href);
           return (
             <li key={href}>
@@ -21,7 +24,7 @@ export function NavList({ layoutKey, onNavigate }: { layoutKey: string; onNaviga
                 onClick={onNavigate}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'group relative flex h-11 items-center gap-3 rounded-2xl px-3.5 text-[14px] font-medium transition-colors duration-200',
+                  'group relative flex h-10 items-center gap-3 rounded-2xl px-3.5 text-[14px] font-medium transition-colors duration-200',
                   active ? 'text-fg' : 'text-muted hover:text-fg',
                 )}
               >
@@ -43,6 +46,8 @@ export function NavList({ layoutKey, onNavigate }: { layoutKey: string; onNaviga
           );
         })}
       </ul>
+        </div>
+      ))}
     </nav>
   );
 }

@@ -107,7 +107,7 @@ export function MobileDrawer() {
   );
 }
 
-const BOTTOM_ITEMS = NAV_ITEMS.filter((i) => ['/', '/habits', '/calendar', '/analytics'].includes(i.href));
+const BOTTOM_ITEMS = ['/', '/day', '/habits', '/calendar'].map((h) => NAV_ITEMS.find((i) => i.href === h)!);
 
 export function BottomNavigation() {
   const pathname = usePathname() ?? '/';

@@ -14,6 +14,8 @@ import { APP_CONFIG } from '@/config/app';
 import { deviceTimeZone, formatTime, zonedParts } from '@/lib/date';
 import { fadeUp, stagger } from '@/lib/motion';
 import { exportBackup } from '@/lib/backup';
+import { CsvExport, InstallApp, Snapshots } from '@/components/settings/DataTools';
+import { DashboardSettings, PersonalizationSettings } from '@/components/settings/Personalization';
 import { hapticsSupported, sounds } from '@/lib/feedback';
 import { actions, useApp } from '@/lib/store/app-store';
 import { useToday } from '@/lib/store/clock';
@@ -174,6 +176,14 @@ export default function SettingsPage() {
                 { value: 'system', label: 'Системная', icon: <Monitor size={14} /> },
               ]}
             />
+          </Section>
+
+          <Section title="Персонализация" description="Оформление сохраняется на этом устройстве">
+            <PersonalizationSettings />
+          </Section>
+
+          <Section title="Главная страница" description="Какие блоки показывать справа и в каком порядке">
+            <DashboardSettings />
           </Section>
 
           <Section title="Время и календарь" description={`Сейчас ${nowStr} · ${timeZone}`}>
@@ -338,6 +348,14 @@ export default function SettingsPage() {
                 }}
               />
             </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-fg">Таблицы CSV</p>
+              <CsvExport />
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-fg">Автоматические копии</p>
+              <Snapshots />
+            </div>
             {mode === 'real' ? (
               <Row
                 label="Демо-режим"
@@ -369,8 +387,12 @@ export default function SettingsPage() {
             </div>
           </Section>
 
+          <Section title="Приложение и офлайн">
+            <InstallApp />
+          </Section>
+
           <motion.p variants={fadeUp} className="px-2 text-center text-xs text-subtle">
-            {APP_CONFIG.name} · версия 1.0 · данные не покидают ваше устройство
+            {APP_CONFIG.name} · версия 2.0 · данные не покидают ваше устройство, облачной синхронизации пока нет
           </motion.p>
         </div>
       </motion.div>

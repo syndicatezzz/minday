@@ -19,6 +19,8 @@ interface UIState {
   commandOpen: boolean;
   reviewOpen: boolean;
   timer: { open: boolean; habitId: string | null };
+  valueSheet: { open: boolean; habitId: string | null; date: string | null };
+  recoveryOpen: boolean;
   confirm: (ConfirmRequest & { resolve: (v: boolean | string) => void }) | null;
 }
 
@@ -30,6 +32,8 @@ export const uiStore = createStore<UIState>({
   commandOpen: false,
   reviewOpen: false,
   timer: { open: false, habitId: null },
+  valueSheet: { open: false, habitId: null, date: null },
+  recoveryOpen: false,
   confirm: null,
 });
 
@@ -57,6 +61,15 @@ export const ui = {
   },
   openTimer(habitId: string | null = null) {
     uiStore.set({ timer: { open: true, habitId }, commandOpen: false });
+  },
+  openValueSheet(habitId: string, date: string) {
+    uiStore.set({ valueSheet: { open: true, habitId, date }, commandOpen: false });
+  },
+  closeValueSheet() {
+    uiStore.set((s) => ({ ...s, valueSheet: { ...s.valueSheet, open: false } }));
+  },
+  setRecovery(open: boolean) {
+    uiStore.set({ recoveryOpen: open });
   },
   closeTimer() {
     uiStore.set((s) => ({ ...s, timer: { ...s.timer, open: false } }));
